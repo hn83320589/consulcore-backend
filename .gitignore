@@ -1,0 +1,19 @@
+# === Build output ===
+bin/
+obj/
+out/
+
+# === 機密設定（含 DB 連線、加密金鑰，不可進版控）===
+appsettings.Development.json
+appsettings.*.local.json
+.env
+*.user
+
+# === IDE ===
+.vs/
+.idea/
+.vscode/
+
+# === OS ===
+.DS_Store
+Thumbs.db

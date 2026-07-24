@@ -1,0 +1,228 @@
+using consulcore_backend.Data;
+using consulcore_backend.DTOs.PerformanceReview;
+using consulcore_backend.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace consulcore_backend.Services;
+
+public class PerformanceService
+{
+    private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+
+    public PerformanceService(AppDbContext db, IAuditService audit) { _db = db; _audit = audit; }
+
+    public async Task<PerformanceReviewResponseDto> CreateAsync(
+        CreatePerformanceReviewDto dto, int orgId, int reviewerId)
+    {
+        var review = new Models.PerformanceReview
+        {
+            OrganizationId = orgId, TherapistUserId = dto.TherapistUserId, ReviewerId = reviewerId,
+            Period = dto.Period, ProfessionalScore = dto.ProfessionalScore,
+            ClientFeedbackScore = dto.ClientFeedbackScore, TeamworkScore = dto.TeamworkScore,
+            OverallScore = dto.OverallScore, Comment = dto.Comment,
+        };
+        _db.PerformanceReviews.Add(review);
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync("create", "performance_review", review.Id, $"建立考核 {dto.Period}");
+        return await GetByIdAsync(review.Id, true);
+    }
+
+    public async Task<PerformanceReviewResponseDto> UpdateAsync(
+        int id, UpdatePerformanceReviewDto dto)
+    {
+        var r = await _db.PerformanceReviews.FindAsync(id)
+            ?? throw new KeyNotFoundException("考核不存在");
+        if (dto.ProfessionalScore.HasValue) r.ProfessionalScore = dto.ProfessionalScore.Value;
+        if (dto.ClientFeedbackScore.HasValue) r.ClientFeedbackScore = dto.ClientFeedbackScore.Value;
+        if (dto.TeamworkScore.HasValue) r.TeamworkScore = dto.TeamworkScore.Value;
+        if (dto.OverallScore.HasValue) r.OverallScore = dto.OverallScore.Value;
+        if (dto.Comment != null) r.Comment = dto.Comment;
+        r.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync("update", "performance_review", id, "更新考核");
+        return await GetByIdAsync(id, true);
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var r = await _db.PerformanceReviews.FindAsync(id)
+            ?? throw new KeyNotFoundException("考核不存在");
+        _db.PerformanceReviews.Remove(r);
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync("delete", "performance_review", id, "刪除考核");
+    }
+
+    public async Task<PerformanceReviewResponseDto> SetVisibilityAsync(int id, SetVisibilityDto dto, int userId)
+    {
+        var r = await _db.PerformanceReviews.FindAsync(id)
+            ?? throw new KeyNotFoundException("考核不存在");
+        r.Visibility = dto.Visibility;
+        r.VisibleFrom = dto.VisibleFrom;
+        r.VisibleUntil = dto.VisibleUntil;
+        if (dto.Visibility == ReviewVisibility.Visible)
+        {
+            r.OpenedBy = userId;
+            r.OpenedAt = DateTime.UtcNow;
+        }
+        r.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync("set_visibility", "performance_review", id,
+            $"設定可見性 {dto.Visibility}");
+        return await GetByIdAsync(id, true);
+    }
+
+    // BR-17: 到期回 hidden
+    // 系統維護任務：跨機構掃描考核可見性排程，故 IgnoreQueryFilters（背景執行無 org context）
+    public async Task<int> CheckVisibilityScheduleAsync()
+    {
+        var now = DateTime.UtcNow;
+        var changed = 0;
+
+        // 到期：VisibleUntil 已過 → 收回
+        var expired = await _db.PerformanceReviews
+            .IgnoreQueryFilters()
+            .Where(r => r.Visibility == ReviewVisibility.Visible
+                && r.VisibleUntil.HasValue && r.VisibleUntil < now)
+            .ToListAsync();
+        foreach (var r in expired) r.Visibility = ReviewVisibility.Hidden;
+        changed += expired.Count;
+
+        // 到時開放：VisibleFrom 已到且尚未過期 → 開放
+        var toOpen = await _db.PerformanceReviews
+            .IgnoreQueryFilters()
+            .Where(r => r.Visibility == ReviewVisibility.Hidden
+                && r.VisibleFrom.HasValue && r.VisibleFrom <= now
+                && (!r.VisibleUntil.HasValue || r.VisibleUntil > now))
+            .ToListAsync();
+        foreach (var r in toOpen) r.Visibility = ReviewVisibility.Visible;
+        changed += toOpen.Count;
+
+        await _db.SaveChangesAsync();
+        return changed;
+    }
+
+    // BR-18: 量化指標心理師可見，質性考核僅 Owner
+    public async Task<List<PerformanceReviewResponseDto>> GetByTherapistAsync(int therapistUserId)
+    {
+        return await _db.PerformanceReviews
+            .Include(r => r.TherapistUser).Include(r => r.Reviewer)
+            .Where(r => r.TherapistUserId == therapistUserId && r.Visibility == ReviewVisibility.Visible)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new PerformanceReviewResponseDto
+            {
+                Id = r.Id, TherapistUserId = r.TherapistUserId,
+                TherapistName = r.TherapistUser.DisplayName, ReviewerId = r.ReviewerId,
+                ReviewerName = r.Reviewer.DisplayName, Period = r.Period,
+                ProfessionalScore = r.ProfessionalScore, ClientFeedbackScore = r.ClientFeedbackScore,
+                TeamworkScore = r.TeamworkScore, OverallScore = r.OverallScore,
+                Comment = null, // BR-18: 質性考核僅 Owner
+                Visibility = r.Visibility, VisibleFrom = r.VisibleFrom,
+                VisibleUntil = r.VisibleUntil, CreatedAt = r.CreatedAt,
+            }).ToListAsync();
+    }
+
+    public async Task<List<PerformanceReviewResponseDto>> GetAllReviewsAsync()
+    {
+        var reviews = await _db.PerformanceReviews
+            .Include(r => r.TherapistUser).Include(r => r.Reviewer)
+            .OrderByDescending(r => r.CreatedAt).ToListAsync();
+        return reviews.Select(r => MapToDto(r, true)).ToList();
+    }
+
+    public async Task<TherapistMetricsDto> GetMetricsAsync(int therapistUserId, DateOnly startDate, DateOnly endDate)
+    {
+        var therapist = await _db.Users.FindAsync(therapistUserId)
+            ?? throw new KeyNotFoundException("心理師不存在");
+
+        var appointments = await _db.Appointments
+            .Include(a => a.ScheduleSlot)
+            .Where(a => a.TherapistUserId == therapistUserId
+                && a.ScheduleSlot.Date >= startDate && a.ScheduleSlot.Date <= endDate)
+            .ToListAsync();
+
+        var totalApts = appointments.Count;
+        var completed = appointments.Count(a => a.Status == AppointmentStatus.Completed);
+        var noShow = appointments.Count(a => a.Status == AppointmentStatus.NoShow);
+
+        var notes = await _db.SessionNotes
+            .Where(n => n.TherapistUserId == therapistUserId
+                && n.CreatedAt >= startDate.ToDateTime(TimeOnly.MinValue)
+                && n.CreatedAt <= endDate.ToDateTime(TimeOnly.MaxValue))
+            .ToListAsync();
+
+        var totalNotes = notes.Count;
+        var lockedNotes = notes.Count(n => n.IsLocked);
+        // 紀錄及時性：晤談紀錄建立時間 與「晤談實際發生時間」（slot 日期+起始時間）的時差
+        var avgDelay = notes.Where(n => n.AppointmentId.HasValue).Select(n =>
+        {
+            var apt = appointments.FirstOrDefault(a => a.Id == n.AppointmentId);
+            if (apt?.ScheduleSlot == null) return 0;
+            var sessionTime = apt.ScheduleSlot.Date.ToDateTime(apt.ScheduleSlot.StartTime);
+            return (n.CreatedAt - sessionTime).TotalHours;
+        }).DefaultIfEmpty(0).Average();
+
+        var activeClients = await _db.TherapistClients
+            .CountAsync(tc => tc.TherapistUserId == therapistUserId
+                && tc.Status == TherapistClientStatus.Active);
+        var longTermClients = await _db.TherapistClients
+            .CountAsync(tc => tc.TherapistUserId == therapistUserId
+                && tc.Status == TherapistClientStatus.Active
+                && tc.CreatedAt <= DateTime.UtcNow.AddMonths(-3));
+
+        var payments = await _db.PaymentRecords
+            .Where(r => r.AppointmentId.HasValue
+                && appointments.Select(a => a.Id).Contains(r.AppointmentId.Value))
+            .ToListAsync();
+        var paidPayments = payments.Count(p => p.Status == PaymentStatus.Paid);
+
+        var sessionHours = completed * 50.0m / 60; // assume 50min sessions
+
+        return new TherapistMetricsDto
+        {
+            TherapistUserId = therapistUserId,
+            TherapistName = therapist.DisplayName,
+            AppointmentCompletionRate = totalApts > 0 ? Math.Round((decimal)completed / totalApts * 100, 1) : 0,
+            NoShowRate = totalApts > 0 ? Math.Round((decimal)noShow / totalApts * 100, 1) : 0,
+            AvgNoteDelayHours = Math.Round((decimal)avgDelay, 1),
+            NoteLockRate = totalNotes > 0 ? Math.Round((decimal)lockedNotes / totalNotes * 100, 1) : 0,
+            ClientRetentionRate = activeClients > 0 ? Math.Round((decimal)longTermClients / activeClients * 100, 1) : 0,
+            MonthlySessionCount = completed,
+            MonthlySessionHours = sessionHours,
+            PaymentCompletionRate = payments.Count > 0 ? Math.Round((decimal)paidPayments / payments.Count * 100, 1) : 0,
+        };
+    }
+
+    public async Task<List<TherapistMetricsDto>> GetMetricsComparisonAsync(DateOnly startDate, DateOnly endDate)
+    {
+        var therapistIds = await _db.Users
+            .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "therapist"))
+            .Select(u => u.Id).ToListAsync();
+
+        var results = new List<TherapistMetricsDto>();
+        foreach (var id in therapistIds)
+            results.Add(await GetMetricsAsync(id, startDate, endDate));
+        return results;
+    }
+
+    private async Task<PerformanceReviewResponseDto> GetByIdAsync(int id, bool includeComment)
+    {
+        var r = await _db.PerformanceReviews
+            .Include(r => r.TherapistUser).Include(r => r.Reviewer)
+            .FirstOrDefaultAsync(r => r.Id == id)
+            ?? throw new KeyNotFoundException("考核不存在");
+        return MapToDto(r, includeComment);
+    }
+
+    private static PerformanceReviewResponseDto MapToDto(Models.PerformanceReview r, bool includeComment) => new()
+    {
+        Id = r.Id, TherapistUserId = r.TherapistUserId,
+        TherapistName = r.TherapistUser?.DisplayName ?? "", ReviewerId = r.ReviewerId,
+        ReviewerName = r.Reviewer?.DisplayName ?? "", Period = r.Period,
+        ProfessionalScore = r.ProfessionalScore, ClientFeedbackScore = r.ClientFeedbackScore,
+        TeamworkScore = r.TeamworkScore, OverallScore = r.OverallScore,
+        Comment = includeComment ? r.Comment : null,
+        Visibility = r.Visibility, VisibleFrom = r.VisibleFrom,
+        VisibleUntil = r.VisibleUntil, CreatedAt = r.CreatedAt,
+    };
+}

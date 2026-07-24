@@ -1,0 +1,14 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_DB_HOST;Port=3306;Database=consulcore;User=root;Password=YOUR_PASSWORD;"
+  },
+  "Encryption": {
+    "Key": "YOUR_BASE64_ENCODED_32_BYTE_KEY"
+  }
+}
