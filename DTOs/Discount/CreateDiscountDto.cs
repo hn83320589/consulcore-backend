@@ -9,6 +9,8 @@ public class CreateDiscountDto
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }
     [MaxLength(50)] public string? ApplicableRole { get; set; }
+    // null = 機構通用折扣；指定心理師 = 專屬折扣
+    public int? TherapistUserId { get; set; }
 }
 
 public class UpdateDiscountDto
@@ -27,6 +29,7 @@ public class DiscountResponseDto
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }
     public string? ApplicableRole { get; set; }
+    public int? TherapistUserId { get; set; }
     public bool IsActive { get; set; }
 }
 

@@ -1,12 +1,28 @@
 #!/bin/bash
 # Sprint 8 — 整合測試腳本
-# Usage: bash tests/integration-test.sh
+#
+# 連線資訊由環境變數提供（勿在腳本內寫死憑證）：
+#   BASE       API 位址（預設 http://localhost:5037）
+#   DB_HOST DB_PORT DB_USER DB_PASSWORD  加密驗證直接查 DB 用（必填）
+#   DB_NAME    資料庫名稱（預設 consulcore）
+#   MYSQL_BIN  mysql client 路徑（預設 mysql）
+#
+# Usage:
+#   export DB_HOST=... DB_PORT=... DB_USER=... DB_PASSWORD=...
+#   bash tests/integration-test.sh
 set -euo pipefail
 
-BASE="http://localhost:5037"
+BASE="${BASE:-http://localhost:5037}"
 PASS=0
 FAIL=0
-MYSQL="/opt/homebrew/opt/mysql-client/bin/mysql -h 13.124.185.204 -P 32044 -u root -pb7wZ25dymD34g9otG6eQ1q08CVhxTcEN consulcore -N -e"
+
+: "${DB_HOST:?請設定環境變數 DB_HOST}"
+: "${DB_PORT:?請設定環境變數 DB_PORT}"
+: "${DB_USER:?請設定環境變數 DB_USER}"
+: "${DB_PASSWORD:?請設定環境變數 DB_PASSWORD}"
+DB_NAME="${DB_NAME:-consulcore}"
+MYSQL_BIN="${MYSQL_BIN:-mysql}"
+MYSQL="$MYSQL_BIN -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME -N -e"
 
 # Helpers
 api() { curl -s "$BASE$1" "${@:2}"; }

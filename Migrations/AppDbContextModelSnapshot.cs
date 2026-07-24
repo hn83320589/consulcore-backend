@@ -17,7 +17,7 @@ namespace consulcore_backend.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.14")
+                .HasAnnotation("ProductVersion", "9.0.18")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -663,6 +663,10 @@ namespace consulcore_backend.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("percentage_value");
 
+                    b.Property<int?>("TherapistUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("therapist_user_id");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
@@ -670,6 +674,8 @@ namespace consulcore_backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OrganizationId");
+
+                    b.HasIndex("TherapistUserId");
 
                     b.ToTable("discounts");
                 });
@@ -2326,7 +2332,13 @@ namespace consulcore_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("consulcore_backend.Models.User", "TherapistUser")
+                        .WithMany()
+                        .HasForeignKey("TherapistUserId");
+
                     b.Navigation("Organization");
+
+                    b.Navigation("TherapistUser");
                 });
 
             modelBuilder.Entity("consulcore_backend.Models.FeeSchedule", b =>

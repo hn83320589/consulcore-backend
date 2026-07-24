@@ -13,6 +13,10 @@ public class Discount
     [Column("organization_id")]
     public int OrganizationId { get; set; }
 
+    // 心理師專屬折扣；null = 機構通用（比照 FeeSchedule，查找時專屬優先於通用）
+    [Column("therapist_user_id")]
+    public int? TherapistUserId { get; set; }
+
     [Required]
     [MaxLength(100)]
     [Column("name")]
@@ -45,6 +49,9 @@ public class Discount
     // Navigation
     [ForeignKey("OrganizationId")]
     public Organization Organization { get; set; } = null!;
+
+    [ForeignKey("TherapistUserId")]
+    public User? TherapistUser { get; set; }
 }
 
 public static class DiscountTypes

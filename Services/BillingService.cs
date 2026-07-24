@@ -94,7 +94,7 @@ public class BillingService
 
         // 3. 查折扣
         var (discount, discountAmount) = await _discountService.FindApplicableDiscountAsync(
-            apt.ClientProfileId, originalAmount);
+            apt.ClientProfileId, apt.TherapistUserId, originalAmount);
 
         var finalAmount = originalAmount - discountAmount;
 
