@@ -284,6 +284,11 @@ STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/rooms" \
   -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: therapist")
 assert "Therapist /rooms → 403" "$STATUS_CODE" "403"
 
+# 安全：therapist 偽造 X-Active-Role: owner 不可提權（active role 須為 JWT 內實有角色）
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/users" \
+  -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: owner")
+assert "Therapist spoofing X-Active-Role=owner → 403" "$STATUS_CODE" "403"
+
 # Therapist cannot manage fee schedules
 # Therapist has billing.view (by design) so fee-schedules is accessible
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/audit-logs" \
@@ -340,6 +345,11 @@ assert "Therapist_a by-therapist/3 → 403" "$STATUS_CODE" "403"
 STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/client-profiles/$CLIENT2_ID" \
   -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: therapist")
 assert "Therapist_a GET other's client → 403" "$STATUS_CODE" "403"
+
+# 安全：therapist 偽造 owner header 也不可取得全機構個案（scope 不提升）
+SPOOF_CLIENTS=$(api /api/client-profiles -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: owner")
+assert "Therapist spoofing owner does NOT see therapist_b's client" \
+  "$(echo "$SPOOF_CLIENTS" | jq_ "print('yes' if any(c['id']==$CLIENT2_ID for c in (d.get('data') or [])) else 'no')")" "no"
 
 echo ""
 echo "========================================"

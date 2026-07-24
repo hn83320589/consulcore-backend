@@ -20,11 +20,24 @@ public class ClientProfilesController : ControllerBase
 
     private int CurrentUserId() => int.Parse(User.FindFirst("userId")!.Value);
 
-    // owner/admin 可存取全機構個案；其餘角色（therapist）僅限自己被指派的個案
+    // owner/admin 可存取全機構個案；其餘角色（therapist）僅限自己被指派的個案。
+    // active role 必須是使用者 JWT 內真的擁有的角色，避免 X-Active-Role header 偽造提權。
     private bool HasFullClientScope()
     {
         var role = Request.Headers["X-Active-Role"].FirstOrDefault();
-        return role is "owner" or "admin";
+        if (role is not ("owner" or "admin")) return false;
+
+        var rolesClaim = User.FindFirst("roles")?.Value;
+        if (string.IsNullOrEmpty(rolesClaim)) return false;
+        try
+        {
+            var userRoles = System.Text.Json.JsonSerializer.Deserialize<List<string>>(rolesClaim) ?? [];
+            return userRoles.Contains(role);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
     }
 
     [HttpGet]
