@@ -10,7 +10,11 @@
 
 前端倉庫：`consulcore-frontend`（Vue 3 SPA，獨立部署）
 
-專案架構與業務規則詳見 [`CLAUDE.md`](./CLAUDE.md)。
+## 相關文件
+
+- [`CLAUDE.md`](./CLAUDE.md) — 專案架構、業務規則、開發規範
+- [`docs/frontend-integration.md`](./docs/frontend-integration.md) — **前後端介接契約**（API 端點、DTO/TypeScript 型別、enum 值、權限模型）。前端開發以此為唯一事實來源
+- [`SECURITY.md`](./SECURITY.md) — 機密管理與憑證輪替步驟
 
 ---
 
