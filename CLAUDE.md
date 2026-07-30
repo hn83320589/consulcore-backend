@@ -93,16 +93,25 @@ options.AddPolicy("CanManageClients", policy =>
 public async Task<IActionResult> CreateClient(...) { }
 ```
 
-`PermissionHandler` 從 JWT 的 activeRole + DB 中的 RolePermission 表檢查權限。
+`PermissionHandler` 從 `X-Active-Role` header 取 activeRole + DB 中的 RolePermission 表檢查權限。
+
+> ⚠️ **安全（勿回歸）**：`X-Active-Role` 是 client 可控 header。`PermissionHandler`
+> **必須**先驗證 activeRole 存在於 JWT 的 `roles` claim 才受理，否則任何登入者送
+> `X-Active-Role: owner` 即可提權。Controller 內依 `X-Active-Role` 做 scope 判斷處
+> （如 `ClientProfilesController.HasFullClientScope`）同樣要對照 JWT roles 驗證。
 
 ### 4. 多角色 JWT
 
 JWT Payload 包含所有角色，前端選擇 activeRole 後透過 Header 告知：
 
 ```
-JWT Claims: { userId, organizationId, roles: ["therapist","client"], username }
+JWT Claims: { userId, organizationId, roles: ["therapist","client"], username, mustChangePassword }
 Request Headers: X-Active-Role: therapist, X-Organization-Id: 1
 ```
+
+`mustChangePassword=true`（個案首次登入預設密碼）時，`MustChangePasswordMiddleware`
+攔截除 `/api/auth/change-password`、`/api/auth/me`、`/api/auth/logout` 以外的所有請求回 403，
+強制先改密碼；改密碼後需重新登入才會拿到 `mustChangePassword=false` 的新 token。
 
 ### 5. 稽核
 
@@ -112,6 +121,19 @@ Request Headers: X-Active-Role: therapist, X-Organization-Id: 1
 await _audit.LogAsync("update", "session_note", noteId, "解鎖晤談紀錄",
     new { before = snapshot, after = updated });
 ```
+
+必記觸發點含各資料的**檢視**（ClientProfile GetById/Search、SessionNote by-client/by-appointment）。
+
+### 6. 背景排程
+
+`ScheduledMaintenanceService`（`IHostedService`，每 24 小時）跨機構執行系統維護：
+
+- 套餐到期 → `expired`
+- 考核可見性排程（`VisibleFrom` 到時開放 / `VisibleUntil` 到期收回，BR-17）
+- 常態預約續約提醒（剩餘 ≤ 2 次 → 通知心理師）
+
+> 背景執行無 HttpContext，`_currentOrgId` 為 null 會讓 Global Query Filter 過濾掉所有列。
+> 跨機構維護任務**必須**用 `IgnoreQueryFilters()` 才掃得到全機構資料。
 
 ---
 
@@ -156,7 +178,7 @@ FormTemplate → FormSection → FormField, FormSubmission → FormFieldValue（
 SessionNote（SOAP 各欄位加密）, PhraseTemplate, ClientMemo（加密）
 
 ### 收費（6）
-FeeSchedule, Package, ClientPackage, Discount, ClientDiscount, PaymentRecord（original + final amount）
+FeeSchedule, Package, ClientPackage, Discount（therapist_user_id 可空=機構通用）, ClientDiscount, PaymentRecord（original + final amount）
 
 ### 考核（2）
 PerformanceReview（含 visibility 控制）, ViolationRecord（加密）
@@ -183,7 +205,7 @@ AuditLog（不可刪除, changes 加密）
 | BR-08 | 晤談紀錄鎖定可逆，留完整稽核 |
 | BR-09 | 費率查找：心理師專屬 > 機構通用 |
 | BR-10 | 套餐剩餘 2 次觸發提醒 |
-| BR-11 | 折扣可綁定角色標籤自動套用 |
+| BR-11 | 折扣可綁定角色標籤自動套用；折扣分心理師專屬與機構通用，查找時專屬優先（比照 BR-09） |
 | BR-12 | 必要通知不可關閉 |
 | BR-13 | 稽核紀錄不可刪除 |
 | BR-14 | 同意書簽署保存內容快照與版本號 |
@@ -269,3 +291,4 @@ dotnet test                      # 測試
 | 日期 | 異動 |
 |------|------|
 | 2026-04-03 | 初始版本，Phase 1 完整架構 |
+| 2026-07-30 | 稽核修復（安全/通知/排程/正確性）；修復 X-Active-Role 偽造提權；新增 MustChangePasswordMiddleware 與 ScheduledMaintenanceService；Discount 改 therapist 層級（+TherapistUserId 可空）；通知 Seeder 補至 24 筆（8 event×3 channel）；稽核新增 PDF 匯出；密鑰移出版控；新增前端介接文件 `docs/frontend-integration.md` 與 `SECURITY.md` |
