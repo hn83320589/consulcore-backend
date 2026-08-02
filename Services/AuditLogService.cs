@@ -61,9 +61,11 @@ public class AuditLogService
             .ToListAsync();
 
         var sb = new StringBuilder();
-        sb.AppendLine("ID,使用者,操作,資源類型,資源ID,描述,IP,時間");
+        sb.AppendLine(CsvWriter.Row("ID", "使用者", "操作", "資源類型", "資源ID", "描述", "IP", "時間"));
         foreach (var l in logs)
-            sb.AppendLine($"{l.Id},{l.UserName},{l.Action},{l.ResourceType},{l.ResourceId},\"{l.Description}\",{l.IpAddress},{l.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine(CsvWriter.Row(
+                l.Id, l.UserName, l.Action, l.ResourceType, l.ResourceId,
+                l.Description, l.IpAddress, l.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")));
         return sb.ToString();
     }
 

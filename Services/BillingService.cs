@@ -261,9 +261,13 @@ public class BillingService
             .ToListAsync();
 
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("ID,個案,原始金額,實收金額,付款方式,類型,狀態,付款時間,建立時間");
+        sb.AppendLine(CsvWriter.Row("ID", "個案", "原始金額", "實收金額", "付款方式", "類型", "狀態", "付款時間", "建立時間"));
         foreach (var p in payments)
-            sb.AppendLine($"{p.Id},{p.ClientName},{p.OriginalAmount},{p.FinalAmount},{p.PaymentMethod},{p.PaymentType},{p.Status},{p.PaidAt:yyyy-MM-dd HH:mm:ss},{p.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine(CsvWriter.Row(
+                p.Id, p.ClientName, p.OriginalAmount, p.FinalAmount,
+                p.PaymentMethod, p.PaymentType, p.Status,
+                p.PaidAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "",
+                p.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")));
         return sb.ToString();
     }
 
