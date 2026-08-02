@@ -19,9 +19,9 @@ public class AuditLogsController : ControllerBase
         [FromQuery] string? action, [FromQuery] string? resourceType,
         [FromQuery] int? userId, [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate, [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery] int pageSize = 50, [FromQuery] int? resourceId = null)
     {
-        var logs = await _service.GetLogsAsync(action, resourceType, userId, startDate, endDate, page, pageSize);
+        var logs = await _service.GetLogsAsync(action, resourceType, userId, startDate, endDate, page, pageSize, resourceId);
         return Ok(ApiResponse<List<AuditLogResponseDto>>.Ok(logs));
     }
 

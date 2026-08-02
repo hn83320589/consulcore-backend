@@ -184,6 +184,14 @@ public class SessionNoteService
         return MapToDto(note);
     }
 
+    // controller 檢視單筆晤談紀錄用：記錄檢視稽核後回傳
+    public async Task<SessionNoteResponseDto> ViewByIdAsync(int id)
+    {
+        var dto = await GetByIdAsync(id);
+        await _audit.LogAsync("view", "session_note", id, $"檢視晤談紀錄 (id={id})");
+        return dto;
+    }
+
     private static SessionNoteResponseDto MapToDto(SessionNote n)
     {
         return new SessionNoteResponseDto

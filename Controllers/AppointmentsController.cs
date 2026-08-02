@@ -91,4 +91,12 @@ public class AppointmentsController : ControllerBase
         var slots = await _appointmentService.GetAvailableSlotsAsync(therapistUserId, start, end);
         return Ok(ApiResponse<List<ScheduleSlotResponseDto>>.Ok(slots));
     }
+
+    [HttpGet("{id:int}")]
+    [Authorize(Policy = "CanViewAppointments")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var appointment = await _appointmentService.GetByIdAsync(id);
+        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment));
+    }
 }

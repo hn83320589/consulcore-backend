@@ -174,6 +174,25 @@ public class ConsentService
             .ToListAsync();
     }
 
+    // 簽署紀錄總表（含篩選）
+    public async Task<List<ConsentRecordResponseDto>> GetRecordsAsync(
+        int? clientProfileId, string? status, string? triggerEvent)
+    {
+        var query = _db.ConsentRecords
+            .Include(r => r.ConsentTemplate)
+            .Include(r => r.ClientProfile)
+            .AsQueryable();
+
+        if (clientProfileId.HasValue) query = query.Where(r => r.ClientProfileId == clientProfileId.Value);
+        if (!string.IsNullOrEmpty(status)) query = query.Where(r => r.Status == status);
+        if (!string.IsNullOrEmpty(triggerEvent)) query = query.Where(r => r.ConsentTemplate.TriggerEvent == triggerEvent);
+
+        return await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => MapRecordToDto(r))
+            .ToListAsync();
+    }
+
     private async Task<ConsentRecordResponseDto> GetRecordByIdAsync(int id)
     {
         var record = await _db.ConsentRecords

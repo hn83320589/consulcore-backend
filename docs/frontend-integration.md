@@ -3,7 +3,7 @@
 > 對象：`consulcore-frontend`（Vue 3 + TypeScript）開發者 / Claude Code
 > 目的：讓前端照著這份「唯一事實來源」開發，避免與後端資料結構對不上。
 > 來源：直接從後端 `.NET 10` 程式碼萃取（Controllers / DTOs / Models / Middleware）。
-> 最後同步：2026-07-30。後端有異動時，以程式碼與此文件為準，勿憑印象猜測欄位。
+> 最後同步：2026-08-02。後端有異動時，以程式碼與此文件為準，勿憑印象猜測欄位。
 
 **使用原則**
 - 所有型別以本文件的 **TypeScript 定義**為準，直接複製到前端型別檔，欄位對不上時 TS 會編譯報錯——這正是防呆機制。
@@ -159,8 +159,13 @@ interface CurrentUser {
   roles: string[];              // 全部角色
   activeRole?: string | null;   // 目前 X-Active-Role
   permissions: string[];        // 依 activeRole 對應的權限碼（見第 5 節）
+  clientProfileId?: number | null; // 若此帳號是個案，對應的 ClientProfile.id（個案端查自己資料用）
 }
 ```
+
+> ⚠️ **個案端查詢用 `clientProfileId`，不要用 `userId`**。使用者的 `userId`（帳號 PK）與其
+> `clientProfileId`（個案檔 PK）是**不同的值**。client 角色要查自己的預約/同意書/套餐時，
+> 一律用 `/me` 回傳的 `clientProfileId` 當作 API 的 `clientProfileId` 參數。若帳號沒有對應個案檔則為 `null`。
 
 **Auth 端點總表**
 
@@ -408,6 +413,7 @@ interface ConsentRecordResponse {
 | DELETE | `/api/consent-templates/{id}` | consent.update | — | `{}` |
 | POST | `/api/consent-records/sign` | consent.create | `SignConsentRequest` | `ConsentRecordResponse` |
 | POST | `/api/consent-records/{id}/void` | consent.void | `VoidConsentRequest` | `ConsentRecordResponse` |
+| GET | `/api/consent-records` | consent.view | `?clientProfileId=&status=&triggerEvent=`（皆選填） | `ConsentRecordResponse[]` |
 | GET | `/api/consent-records/by-client/{clientProfileId}` | consent.view | — | `ConsentRecordResponse[]` |
 | GET | `/api/consent-records/by-trigger-event/{triggerEvent}` | consent.view | — | `ConsentRecordResponse[]` |
 
@@ -518,10 +524,12 @@ interface AppointmentSeriesResponse {
 | GET | `/api/appointments/calendar` | appointment.view | `?startDate=&endDate=&therapistUserId=`（前二必填） | `AppointmentResponse[]` |
 | GET | `/api/appointments/list` | appointment.view | `?clientProfileId=&therapistUserId=&status=`（皆選填） | `AppointmentResponse[]` |
 | GET | `/api/appointments/available-slots` | appointment.view | `?startDate=&endDate=&therapistUserId=`（前二必填） | `ScheduleSlotResponse[]` |
+| GET | `/api/appointments/{id}` | appointment.view | — | `AppointmentResponse` |
 | POST | `/api/appointment-series` | appointment.create | `CreateAppointmentSeriesRequest` | `AppointmentSeriesResponse` |
 | POST | `/api/appointment-series/{id}/renew` | appointment.create | `RenewSeriesRequest` | `AppointmentSeriesResponse` |
 | POST | `/api/appointment-series/{id}/end` | appointment.update | — | `AppointmentSeriesResponse` |
 | GET | `/api/appointment-series/pending-renewal` | appointment.view | — | `AppointmentSeriesResponse[]` |
+| GET | `/api/appointment-series/by-client/{clientProfileId}` | appointment.view | `?status=` | `AppointmentSeriesResponse[]` |
 
 > - `available-slots` 回傳的是 **`ScheduleSlotResponse[]`**（不是 Appointment），供個案挑時段用。
 > - `hints` 是溫和提示、**不阻擋**建立，前端顯示為提示即可。
@@ -607,6 +615,7 @@ interface SessionNoteResponse {
 | POST | `/api/session-notes/{id}/unlock` | session.lock | — | `SessionNoteResponse` |
 | GET | `/api/session-notes/by-client/{clientProfileId}` | session.view | — | `SessionNoteResponse[]` |
 | GET | `/api/session-notes/by-appointment/{appointmentId}` | session.view | — | `SessionNoteResponse \| null` |
+| GET | `/api/session-notes/{id}` | session.view | — | `SessionNoteResponse` |
 
 > - **僅紀錄建立者（該 therapist）可編輯/刪除/鎖定/解鎖**，他人操作回 403（UnauthorizedAccessException → 401/403 視情況，實務為權限拒絕）。
 > - 已鎖定（`isLocked=true`）不可編輯/刪除；解鎖可逆但全程留稽核（BR-08）。
@@ -711,6 +720,9 @@ interface ClientPackageResponse {
 | POST | `/api/billing/{id}/refund` | billing.refund | `RefundRequest` | `PaymentRecordResponse` |
 | POST | `/api/billing/{id}/waive` | billing.update | — | `PaymentRecordResponse` |
 | GET | `/api/billing/pending` | billing.view | — | `PaymentRecordResponse[]` |
+| GET | `/api/billing` | billing.view | `?startDate=&endDate=&clientProfileId=&therapistUserId=&status=&page=1&pageSize=50` | `PaymentRecordResponse[]` |
+| GET | `/api/billing/packages` | billing.view | `?clientProfileId=&status=` | `ClientPackageResponse[]` |
+| GET | `/api/billing/export` | billing.view | `?startDate=&endDate=&clientProfileId=&therapistUserId=&status=` | **檔案下載** CSV（UTF-8 BOM） |
 
 **報表 Reports（`/api/reports`，Policy: billing.view）**
 
@@ -783,7 +795,14 @@ interface TherapistMetrics {
   monthlySessionHours: number;        // 月諮商時數
   paymentCompletionRate: number;      // 收費完成率 %
 }
+// 單一指標的時間趨勢
+interface MetricsTrend {
+  metric: string;                     // 指標鍵（同 TherapistMetrics 的欄位名，如 'appointmentCompletionRate'）
+  points: { period: string; value: number }[]; // period 為 "yyyy-MM"
+}
 ```
+
+有效的 `metric` 鍵（對應 `TherapistMetrics` 的量化欄位）：`appointmentCompletionRate`、`noShowRate`、`avgNoteDelayHours`、`noteLockRate`、`clientRetentionRate`、`monthlySessionCount`、`monthlySessionHours`、`paymentCompletionRate`。傳未知鍵回 400。
 
 | Method | 路由 | Policy | Body / Query | Response |
 |--------|------|--------|--------------|----------|
@@ -794,6 +813,7 @@ interface TherapistMetrics {
 | DELETE | `/api/performance-reviews/{id}` | performance.manage | — | `{}` |
 | PUT | `/api/performance-reviews/{id}/visibility` | performance.manage | `SetVisibilityRequest` | `PerformanceReviewResponse` |
 | GET | `/api/performance-reviews/metrics/{therapistUserId}` | performance.view | `?startDate=&endDate=`（必填） | `TherapistMetrics` |
+| GET | `/api/performance-reviews/metrics/{therapistUserId}/trend` | performance.view | `?metric=&startDate=&endDate=&interval=month`（metric/startDate/endDate 必填；interval 目前僅 month） | `MetricsTrend` |
 | GET | `/api/performance-reviews/metrics-comparison` | performance.manage | `?startDate=&endDate=` | `TherapistMetrics[]` |
 
 > 質性 `comment` 僅 Owner 可見（BR-18），心理師檢視時後端會把 `comment` 回成 `null`。量化 `metrics` 心理師可見自己。考核預設 `hidden`（BR-17），由 Owner 手動或排程開放。
@@ -824,12 +844,31 @@ interface AuditLogResponse { id: number; userId: number; userName?: string | nul
 
 | Method | 路由 | Query | Response |
 |--------|------|-------|----------|
-| GET | `/api/audit-logs` | `?action=&resourceType=&userId=&startDate=&endDate=&page=1&pageSize=50` | `AuditLogResponse[]` |
+| GET | `/api/audit-logs` | `?action=&resourceType=&resourceId=&userId=&startDate=&endDate=&page=1&pageSize=50` | `AuditLogResponse[]` |
 | GET | `/api/audit-logs/export` | `?action=&resourceType=&startDate=&endDate=&format=csv\|pdf` | **檔案下載**（非 ApiResponse） |
 
 > - 稽核不可刪除（BR-13），只有查詢與匯出。
 > - `export` 回傳**檔案**：`format=csv`（預設，UTF-8 BOM，Excel 中文正常）或 `format=pdf`。前端用 blob 下載，勿當 JSON 解析。
-> - export 的 query **沒有** `userId` / `page` / `pageSize`。
+> - export 的 query **沒有** `userId` / `page` / `pageSize` / `resourceId`。
+> - `resourceId`（number，選填）與 `resourceType` 搭配可精準查「某資源的稽核」（如某個案）。
+
+**⚠️ `resourceType` 的實際值為 snake_case（不是 PascalCase）**。前端篩選/比對務必用下列值：
+
+| resourceType | 說明 |
+|---|---|
+| `client_profile` | 個案 |
+| `session_note` | 晤談紀錄 |
+| `consent_record` / `consent_template` | 同意書簽署 / 範本 |
+| `appointment` / `appointment_series` | 預約 / 常態預約 |
+| `schedule_slot` / `schedule_template` | 時段 / 班表範本 |
+| `payment_record` / `client_package` / `discount` / `client_discount` / `fee_schedule` / `package` | 收費相關 |
+| `form_template` / `form_submission` | 表單範本 / 填答 |
+| `client_memo` | 個案備忘 |
+| `user` / `role` / `organization` | 帳號 / 角色 / 機構 |
+| `performance_review` / `violation_record` | 考核 / 違規 |
+| `room` | 診間 |
+
+（`action` 常見值：`create`/`update`/`delete`/`view`/`search`/`sign`/`void`/`lock`/`unlock`/`block`/`unblock`/`assign`/`transfer_therapist`/`complete`/`cancel`/`no_show`/`reschedule`/`confirm`/`refund`/`waive`/`package_deduct`/`purchase`/`resolve`/`dismiss`/`set_visibility`/`login`/`register`/`change_password`/`reset_password`/`toggle_active`/`update_permissions` 等。）
 
 ---
 
@@ -848,6 +887,8 @@ interface AuditLogResponse { id: number; userId: number; userName?: string | nul
 11. **稽核匯出用 blob 下載**，不要 JSON.parse。
 12. **金額是 number、日期時間多為 ISO 字串**；但 `date`/`startTime`/`endTime`/`dateOfBirth`/`incidentDate` 是純字串（`yyyy-MM-dd` 或 `HH:mm`）。
 13. **加密對前端透明**：14 個個資欄位、SOAP、同意書快照等後端自動加解密，前端拿到的是明文、送出也是明文，無需處理。
+14. **個案端用 `clientProfileId`（來自 /me），不是 `userId`**：兩者是不同的值，用錯會抓到別人的資料。
+15. **稽核 `resourceType` 是 snake_case**（`client_profile` 等），不是 PascalCase；篩選/比對要用實際值。
 
 ---
 

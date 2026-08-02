@@ -17,7 +17,8 @@ public class AuditLogService
 
     public async Task<List<AuditLogResponseDto>> GetLogsAsync(
         string? action, string? resourceType, int? userId,
-        DateTime? startDate, DateTime? endDate, int page = 1, int pageSize = 50)
+        DateTime? startDate, DateTime? endDate, int page = 1, int pageSize = 50,
+        int? resourceId = null)
     {
         var query = _db.AuditLogs
             .Include(a => a.User)
@@ -25,6 +26,7 @@ public class AuditLogService
 
         if (!string.IsNullOrEmpty(action)) query = query.Where(a => a.Action == action);
         if (!string.IsNullOrEmpty(resourceType)) query = query.Where(a => a.ResourceType == resourceType);
+        if (resourceId.HasValue) query = query.Where(a => a.ResourceId == resourceId.Value);
         if (userId.HasValue) query = query.Where(a => a.UserId == userId.Value);
         if (startDate.HasValue) query = query.Where(a => a.CreatedAt >= startDate.Value);
         if (endDate.HasValue) query = query.Where(a => a.CreatedAt <= endDate.Value);

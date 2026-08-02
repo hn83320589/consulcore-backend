@@ -65,4 +65,39 @@ public class BillingController : ControllerBase
         var records = await _billingService.GetPendingAsync();
         return Ok(ApiResponse<List<PaymentRecordResponseDto>>.Ok(records));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
+        [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId,
+        [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var records = await _billingService.GetPaymentsAsync(
+            startDate, endDate, clientProfileId, therapistUserId, status, page, pageSize);
+        return Ok(ApiResponse<List<PaymentRecordResponseDto>>.Ok(records));
+    }
+
+    [HttpGet("packages")]
+    public async Task<IActionResult> Packages(
+        [FromQuery] int? clientProfileId, [FromQuery] string? status)
+    {
+        var packages = await _billingService.GetClientPackagesAsync(clientProfileId, status);
+        return Ok(ApiResponse<List<ClientPackageResponseDto>>.Ok(packages));
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> Export(
+        [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
+        [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId, [FromQuery] string? status)
+    {
+        var csv = await _billingService.ExportPaymentsCsvAsync(
+            startDate, endDate, clientProfileId, therapistUserId, status);
+
+        var preamble = System.Text.Encoding.UTF8.GetPreamble();
+        var body = System.Text.Encoding.UTF8.GetBytes(csv);
+        var bytes = new byte[preamble.Length + body.Length];
+        Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+        Buffer.BlockCopy(body, 0, bytes, preamble.Length, body.Length);
+        return File(bytes, "text/csv; charset=utf-8", "payments.csv");
+    }
 }

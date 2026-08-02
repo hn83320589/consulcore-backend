@@ -212,6 +212,81 @@ public class BillingService
             .ToListAsync();
     }
 
+    // 付款紀錄完整清單（含篩選 + 分頁）
+    public async Task<List<PaymentRecordResponseDto>> GetPaymentsAsync(
+        DateTime? startDate, DateTime? endDate, int? clientProfileId,
+        int? therapistUserId, string? status, int page = 1, int pageSize = 50)
+    {
+        var query = BuildPaymentQuery(startDate, endDate, clientProfileId, therapistUserId, status);
+
+        return await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(r => MapPaymentToDto(r))
+            .ToListAsync();
+    }
+
+    // 個案套餐總覽（含篩選）
+    public async Task<List<ClientPackageResponseDto>> GetClientPackagesAsync(int? clientProfileId, string? status)
+    {
+        var query = _db.ClientPackages
+            .Include(c => c.ClientProfile)
+            .Include(c => c.Package)
+            .AsQueryable();
+
+        if (clientProfileId.HasValue) query = query.Where(c => c.ClientProfileId == clientProfileId.Value);
+        if (!string.IsNullOrEmpty(status)) query = query.Where(c => c.Status == status);
+
+        return await query
+            .OrderByDescending(c => c.PurchasedAt)
+            .Select(c => new ClientPackageResponseDto
+            {
+                Id = c.Id, ClientProfileId = c.ClientProfileId, ClientName = c.ClientProfile.Name,
+                PackageId = c.PackageId, PackageName = c.Package.Name,
+                SessionsUsed = c.SessionsUsed, SessionsRemaining = c.SessionsRemaining,
+                Status = c.Status, PurchasedAt = c.PurchasedAt, ExpiresAt = c.ExpiresAt,
+            })
+            .ToListAsync();
+    }
+
+    // 付款紀錄匯出 CSV（含 UTF-8 BOM 由 controller 附加）
+    public async Task<string> ExportPaymentsCsvAsync(
+        DateTime? startDate, DateTime? endDate, int? clientProfileId, int? therapistUserId, string? status)
+    {
+        var payments = await BuildPaymentQuery(startDate, endDate, clientProfileId, therapistUserId, status)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new { r.Id, ClientName = r.ClientProfile != null ? r.ClientProfile.Name : "",
+                r.OriginalAmount, r.FinalAmount, r.PaymentMethod, r.PaymentType, r.Status, r.PaidAt, r.CreatedAt })
+            .ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("ID,個案,原始金額,實收金額,付款方式,類型,狀態,付款時間,建立時間");
+        foreach (var p in payments)
+            sb.AppendLine($"{p.Id},{p.ClientName},{p.OriginalAmount},{p.FinalAmount},{p.PaymentMethod},{p.PaymentType},{p.Status},{p.PaidAt:yyyy-MM-dd HH:mm:ss},{p.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+        return sb.ToString();
+    }
+
+    private IQueryable<PaymentRecord> BuildPaymentQuery(
+        DateTime? startDate, DateTime? endDate, int? clientProfileId, int? therapistUserId, string? status)
+    {
+        var query = _db.PaymentRecords
+            .Include(r => r.ClientProfile)
+            .Include(r => r.Discount)
+            .AsQueryable();
+
+        if (startDate.HasValue) query = query.Where(r => r.CreatedAt >= startDate.Value);
+        if (endDate.HasValue) query = query.Where(r => r.CreatedAt <= endDate.Value);
+        if (clientProfileId.HasValue) query = query.Where(r => r.ClientProfileId == clientProfileId.Value);
+        if (!string.IsNullOrEmpty(status)) query = query.Where(r => r.Status == status);
+        // 心理師篩選：透過收費關聯的預約（套餐購買等無預約者不列入）
+        if (therapistUserId.HasValue)
+            query = query.Where(r => r.AppointmentId != null
+                && _db.Appointments.Any(a => a.Id == r.AppointmentId && a.TherapistUserId == therapistUserId.Value));
+
+        return query;
+    }
+
     // 系統維護任務：跨機構掃描到期套餐，故 IgnoreQueryFilters（背景執行無 org context）
     public async Task<int> CheckExpiredPackagesAsync()
     {

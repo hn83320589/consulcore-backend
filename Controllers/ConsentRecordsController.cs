@@ -35,6 +35,15 @@ public class ConsentRecordsController : ControllerBase
         return Ok(ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已作廢"));
     }
 
+    [HttpGet]
+    [Authorize(Policy = "CanViewConsents")]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int? clientProfileId, [FromQuery] string? status, [FromQuery] string? triggerEvent)
+    {
+        var records = await _consentService.GetRecordsAsync(clientProfileId, status, triggerEvent);
+        return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));
+    }
+
     [HttpGet("by-client/{clientProfileId}")]
     [Authorize(Policy = "CanViewConsents")]
     public async Task<IActionResult> GetByClient(int clientProfileId)

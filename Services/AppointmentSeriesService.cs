@@ -251,6 +251,21 @@ public class AppointmentSeriesService
         return MapToDto(series);
     }
 
+    // 依個案查詢常態性預約（可選 status 篩選）
+    public async Task<List<AppointmentSeriesResponseDto>> GetByClientAsync(int clientProfileId, string? status)
+    {
+        var query = _db.AppointmentSeries
+            .Include(s => s.ClientProfile)
+            .Include(s => s.TherapistUser)
+            .Include(s => s.Appointments)
+            .Where(s => s.ClientProfileId == clientProfileId);
+
+        if (!string.IsNullOrEmpty(status)) query = query.Where(s => s.Status == status);
+
+        var list = await query.OrderByDescending(s => s.CreatedAt).ToListAsync();
+        return list.Select(MapToDto).ToList();
+    }
+
     private static AppointmentSeriesResponseDto MapToDto(AppointmentSeries s)
     {
         var remaining = s.Appointments?

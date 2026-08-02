@@ -187,6 +187,13 @@ public class AuthService
 
         var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
 
+        // 若此帳號有對應的個案檔，帶出 clientProfileId（個案端查詢自己資料用；userId ≠ clientProfileId）
+        var clientProfileId = await _db.ClientProfiles
+            .IgnoreQueryFilters()
+            .Where(c => c.UserId == userId && c.OrganizationId == orgId)
+            .Select(c => (int?)c.Id)
+            .FirstOrDefaultAsync();
+
         // 根據 activeRole 取得對應的權限
         var permissions = new List<string>();
         if (!string.IsNullOrEmpty(activeRole))
@@ -214,7 +221,8 @@ public class AuthService
             OrganizationName = user.Organization.Name,
             Roles = roles,
             ActiveRole = activeRole,
-            Permissions = permissions
+            Permissions = permissions,
+            ClientProfileId = clientProfileId
         };
     }
 

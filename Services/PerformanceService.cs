@@ -205,6 +205,46 @@ public class PerformanceService
         return results;
     }
 
+    // 單一指標隨時間的趨勢（目前以月為區間），逐月計算指定指標值
+    public async Task<MetricsTrendDto> GetMetricsTrendAsync(
+        int therapistUserId, string metric, DateOnly startDate, DateOnly endDate)
+    {
+        var points = new List<MetricPointDto>();
+
+        // 從 startDate 所在月的月初，逐月推進到 endDate 所在月
+        var cursor = new DateOnly(startDate.Year, startDate.Month, 1);
+        var last = new DateOnly(endDate.Year, endDate.Month, 1);
+
+        while (cursor <= last)
+        {
+            var monthStart = cursor;
+            var monthEnd = cursor.AddMonths(1).AddDays(-1);
+            var m = await GetMetricsAsync(therapistUserId, monthStart, monthEnd);
+            points.Add(new MetricPointDto
+            {
+                Period = cursor.ToString("yyyy-MM"),
+                Value = ExtractMetric(m, metric),
+            });
+            cursor = cursor.AddMonths(1);
+        }
+
+        return new MetricsTrendDto { Metric = metric, Points = points };
+    }
+
+    // 指標鍵（camelCase）→ TherapistMetricsDto 欄位值
+    private static decimal ExtractMetric(TherapistMetricsDto m, string metric) => metric switch
+    {
+        "appointmentCompletionRate" => m.AppointmentCompletionRate,
+        "noShowRate" => m.NoShowRate,
+        "avgNoteDelayHours" => m.AvgNoteDelayHours,
+        "noteLockRate" => m.NoteLockRate,
+        "clientRetentionRate" => m.ClientRetentionRate,
+        "monthlySessionCount" => m.MonthlySessionCount,
+        "monthlySessionHours" => m.MonthlySessionHours,
+        "paymentCompletionRate" => m.PaymentCompletionRate,
+        _ => throw new ArgumentException($"未知的指標鍵：{metric}"),
+    };
+
     private async Task<PerformanceReviewResponseDto> GetByIdAsync(int id, bool includeComment)
     {
         var r = await _db.PerformanceReviews

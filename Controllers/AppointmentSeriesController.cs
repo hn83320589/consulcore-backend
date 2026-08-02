@@ -53,4 +53,12 @@ public class AppointmentSeriesController : ControllerBase
         var series = await _seriesService.GetPendingRenewalAsync();
         return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
     }
+
+    [HttpGet("by-client/{clientProfileId}")]
+    [Authorize(Policy = "CanViewAppointments")]
+    public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
+    {
+        var series = await _seriesService.GetByClientAsync(clientProfileId, status);
+        return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
+    }
 }

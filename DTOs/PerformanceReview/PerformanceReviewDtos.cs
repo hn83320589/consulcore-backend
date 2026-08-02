@@ -61,3 +61,15 @@ public class TherapistMetricsDto
     public decimal MonthlySessionHours { get; set; }
     public decimal PaymentCompletionRate { get; set; }
 }
+
+public class MetricsTrendDto
+{
+    public string Metric { get; set; } = string.Empty;
+    public List<MetricPointDto> Points { get; set; } = [];
+}
+
+public class MetricPointDto
+{
+    public string Period { get; set; } = string.Empty; // "yyyy-MM"
+    public decimal Value { get; set; }
+}

@@ -79,4 +79,12 @@ public class SessionNotesController : ControllerBase
         var note = await _sessionNoteService.GetByAppointmentAsync(appointmentId);
         return Ok(ApiResponse<SessionNoteResponseDto?>.Ok(note));
     }
+
+    [HttpGet("{id:int}")]
+    [Authorize(Policy = "CanViewSessions")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var note = await _sessionNoteService.ViewByIdAsync(id);
+        return Ok(ApiResponse<SessionNoteResponseDto>.Ok(note));
+    }
 }

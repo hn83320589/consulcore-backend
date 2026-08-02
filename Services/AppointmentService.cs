@@ -264,7 +264,7 @@ public class AppointmentService
             .ToListAsync();
     }
 
-    private async Task<AppointmentResponseDto> GetByIdAsync(int id)
+    public async Task<AppointmentResponseDto> GetByIdAsync(int id)
     {
         var appointment = await _db.Appointments
             .Include(a => a.ClientProfile)

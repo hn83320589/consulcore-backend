@@ -75,6 +75,17 @@ public class PerformanceReviewsController : ControllerBase
         return Ok(ApiResponse<TherapistMetricsDto>.Ok(metrics));
     }
 
+    [HttpGet("metrics/{therapistUserId}/trend")]
+    [Authorize(Policy = "CanViewPerformance")]
+    public async Task<IActionResult> GetMetricsTrend(int therapistUserId,
+        [FromQuery] string metric, [FromQuery] string startDate, [FromQuery] string endDate,
+        [FromQuery] string interval = "month")
+    {
+        var trend = await _service.GetMetricsTrendAsync(
+            therapistUserId, metric, DateOnly.Parse(startDate), DateOnly.Parse(endDate));
+        return Ok(ApiResponse<MetricsTrendDto>.Ok(trend));
+    }
+
     [HttpGet("metrics-comparison")]
     [Authorize(Policy = "CanManagePerformance")]
     public async Task<IActionResult> GetComparison(
