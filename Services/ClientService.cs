@@ -47,6 +47,15 @@ public class ClientService
         return dto;
     }
 
+    // 由登入帳號 userId 取得其對應的個案檔 id（供 client 角色自我存取範圍控制；無則 null）
+    public async Task<int?> GetClientProfileIdByUserAsync(int userId)
+    {
+        return await _db.ClientProfiles
+            .Where(c => c.UserId == userId)
+            .Select(c => (int?)c.Id)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<ClientProfileResponseDto>> GetByTherapistAsync(int therapistUserId)
     {
         var clientIds = await _db.TherapistClients

@@ -12,11 +12,17 @@ namespace consulcore_backend.Controllers;
 public class AppointmentSeriesController : ControllerBase
 {
     private readonly AppointmentSeriesService _seriesService;
+    private readonly ClientService _clientService;
 
-    public AppointmentSeriesController(AppointmentSeriesService seriesService)
+    public AppointmentSeriesController(AppointmentSeriesService seriesService, ClientService clientService)
     {
         _seriesService = seriesService;
+        _clientService = clientService;
     }
+
+    private bool IsClientRole() => Request.Headers["X-Active-Role"].FirstOrDefault() == "client";
+    private Task<int?> CurrentClientProfileIdAsync()
+        => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
 
     [HttpPost]
     [Authorize(Policy = "CanCreateAppointments")]
@@ -50,6 +56,10 @@ public class AppointmentSeriesController : ControllerBase
     [Authorize(Policy = "CanViewAppointments")]
     public async Task<IActionResult> PendingRenewal()
     {
+        // 待續約清單為 staff 聚合視圖，個案無權存取
+        if (IsClientRole())
+            return StatusCode(403, ApiResponse<object>.Fail("無權存取此清單"));
+
         var series = await _seriesService.GetPendingRenewalAsync();
         return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
     }
@@ -58,6 +68,10 @@ public class AppointmentSeriesController : ControllerBase
     [Authorize(Policy = "CanViewAppointments")]
     public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
     {
+        // client 只能查自己的常態預約，防以任意 id 讀取他人（IDOR）
+        if (IsClientRole() && clientProfileId != await CurrentClientProfileIdAsync())
+            return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的常態預約"));
+
         var series = await _seriesService.GetByClientAsync(clientProfileId, status);
         return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
     }
