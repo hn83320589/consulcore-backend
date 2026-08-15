@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Appointment;
 using consulcore_backend.DTOs.ScheduleSlot;
 using consulcore_backend.Models;
@@ -21,10 +22,11 @@ public class AppointmentsController : ControllerBase
         _clientService = clientService;
     }
 
-    private bool IsClientRole() => Request.Headers["X-Active-Role"].FirstOrDefault() == "client";
+    // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
+    private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private int CurrentUserId() => int.Parse(User.FindFirst("userId")!.Value);
 
-    // client 角色只能存取自己的個案檔 id；取不到（帳號無對應個案）回 null
+    // 使用者自己的個案檔 id；取不到（帳號無對應個案）回 null
     private Task<int?> CurrentClientProfileIdAsync() => _clientService.GetClientProfileIdByUserAsync(CurrentUserId());
 
     [HttpPost]
@@ -74,8 +76,8 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> CalendarView(
         [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? therapistUserId)
     {
-        // 行事曆為 staff 聚合視圖，無法依個案範圍化；個案請改用 list 查自己的預約
-        if (IsClientRole())
+        // 行事曆為 staff 聚合視圖，無法依個案範圍化；非 staff 身份一律拒絕（個案請改用 list）
+        if (!ActingAsVerifiedNonClient())
             return StatusCode(403, ApiResponse<object>.Fail("個案無法存取行事曆檢視"));
 
         var start = DateOnly.Parse(startDate);
@@ -89,8 +91,8 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> ListView(
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId, [FromQuery] string? status)
     {
-        // client 角色一律限縮為自己的個案，忽略傳入的 clientProfileId（防越權查他人）
-        if (IsClientRole())
+        // 非 staff 身份一律限縮為自己的個案，忽略傳入的 clientProfileId（防越權查他人）
+        if (!ActingAsVerifiedNonClient())
         {
             var own = await CurrentClientProfileIdAsync();
             if (own == null) return Ok(ApiResponse<List<AppointmentResponseDto>>.Ok([]));
@@ -118,9 +120,13 @@ public class AppointmentsController : ControllerBase
     {
         var appointment = await _appointmentService.GetByIdAsync(id);
 
-        // client 只能看自己的預約，防止以任意 id 讀取他人（IDOR）
-        if (IsClientRole() && appointment.ClientProfileId != await CurrentClientProfileIdAsync())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取此預約"));
+        // 非 staff 身份只能看自己的預約，防止以任意 id 讀取他人（IDOR）
+        if (!ActingAsVerifiedNonClient())
+        {
+            var ownId = await CurrentClientProfileIdAsync();
+            if (ownId == null || appointment.ClientProfileId != ownId)
+                return StatusCode(403, ApiResponse<object>.Fail("無權存取此預約"));
+        }
 
         return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment));
     }

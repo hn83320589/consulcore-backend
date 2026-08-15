@@ -367,6 +367,39 @@ SPOOF_CLIENTS=$(api /api/client-profiles -H "Authorization: Bearer $THER_TOKEN" 
 assert "Therapist spoofing owner does NOT see therapist_b's client" \
   "$(echo "$SPOOF_CLIENTS" | jq_ "print('yes' if any(c['id']==$CLIENT2_ID for c in (d.get('data') or [])) else 'no')")" "no"
 
+# 個案跨病人 IDOR：小明(client) 只能存取自己（$CLIENT_ID），不可讀 $CLIENT2_ID 的資料
+# 正向：查自己的常態預約/同意書 → 200
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/appointment-series/by-client/$CLIENT_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client series by-client own → 200" "$STATUS_CODE" "200"
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/consent-records/by-client/$CLIENT_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client consent by-client own → 200" "$STATUS_CODE" "200"
+
+# 反向：查別的個案（$CLIENT2_ID）→ 403
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/appointment-series/by-client/$CLIENT2_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client series by-client OTHER → 403" "$STATUS_CODE" "403"
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/consent-records/by-client/$CLIENT2_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client consent by-client OTHER → 403" "$STATUS_CODE" "403"
+
+# staff 專屬聚合視圖：個案身份一律 403
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/appointments/calendar?startDate=2026-01-01&endDate=2026-12-31" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client /appointments/calendar → 403" "$STATUS_CODE" "403"
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/appointment-series/pending-renewal" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: client")
+assert "Client /appointment-series/pending-renewal → 403" "$STATUS_CODE" "403"
+
+# 安全（fail-closed）：小明偽造 X-Active-Role: owner 想甩掉個案範圍，仍不可讀別人資料 → 403
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/appointment-series/by-client/$CLIENT2_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: owner")
+assert "Client spoofing owner on OTHER's series → 403" "$STATUS_CODE" "403"
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/consent-records/by-client/$CLIENT2_ID" \
+  -H "Authorization: Bearer $CLIENT_TOKEN" -H "X-Active-Role: therapist")
+assert "Client spoofing therapist on OTHER's consent → 403" "$STATUS_CODE" "403"
+
 echo ""
 echo "========================================"
 echo " 情境 4：心理師離職（個案移轉）"

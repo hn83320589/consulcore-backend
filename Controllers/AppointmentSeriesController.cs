@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.AppointmentSeries;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -20,7 +21,8 @@ public class AppointmentSeriesController : ControllerBase
         _clientService = clientService;
     }
 
-    private bool IsClientRole() => Request.Headers["X-Active-Role"].FirstOrDefault() == "client";
+    // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
+    private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private Task<int?> CurrentClientProfileIdAsync()
         => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
 
@@ -56,8 +58,8 @@ public class AppointmentSeriesController : ControllerBase
     [Authorize(Policy = "CanViewAppointments")]
     public async Task<IActionResult> PendingRenewal()
     {
-        // 待續約清單為 staff 聚合視圖，個案無權存取
-        if (IsClientRole())
+        // 待續約清單為 staff 聚合視圖，非 staff 身份無權存取
+        if (!ActingAsVerifiedNonClient())
             return StatusCode(403, ApiResponse<object>.Fail("無權存取此清單"));
 
         var series = await _seriesService.GetPendingRenewalAsync();
@@ -68,9 +70,13 @@ public class AppointmentSeriesController : ControllerBase
     [Authorize(Policy = "CanViewAppointments")]
     public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
     {
-        // client 只能查自己的常態預約，防以任意 id 讀取他人（IDOR）
-        if (IsClientRole() && clientProfileId != await CurrentClientProfileIdAsync())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的常態預約"));
+        // 非 staff 身份只能查自己的常態預約，防以任意 id 讀取他人（IDOR）
+        if (!ActingAsVerifiedNonClient())
+        {
+            var own = await CurrentClientProfileIdAsync();
+            if (own == null || clientProfileId != own)
+                return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的常態預約"));
+        }
 
         var series = await _seriesService.GetByClientAsync(clientProfileId, status);
         return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ConsentRecord;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -20,7 +21,8 @@ public class ConsentRecordsController : ControllerBase
         _clientService = clientService;
     }
 
-    private bool IsClientRole() => Request.Headers["X-Active-Role"].FirstOrDefault() == "client";
+    // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
+    private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private Task<int?> CurrentClientProfileIdAsync()
         => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
 
@@ -46,8 +48,8 @@ public class ConsentRecordsController : ControllerBase
     public async Task<IActionResult> GetAll(
         [FromQuery] int? clientProfileId, [FromQuery] string? status, [FromQuery] string? triggerEvent)
     {
-        // client 一律限縮為自己的簽署紀錄，忽略傳入的 clientProfileId（防越權）
-        if (IsClientRole())
+        // 非 staff 身份一律限縮為自己的簽署紀錄，忽略傳入的 clientProfileId（防越權）
+        if (!ActingAsVerifiedNonClient())
         {
             var own = await CurrentClientProfileIdAsync();
             if (own == null) return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok([]));
@@ -61,9 +63,13 @@ public class ConsentRecordsController : ControllerBase
     [Authorize(Policy = "CanViewConsents")]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
-        // client 只能查自己的簽署紀錄（IDOR 防護）
-        if (IsClientRole() && clientProfileId != await CurrentClientProfileIdAsync())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的同意書"));
+        // 非 staff 身份只能查自己的簽署紀錄（IDOR 防護）
+        if (!ActingAsVerifiedNonClient())
+        {
+            var own = await CurrentClientProfileIdAsync();
+            if (own == null || clientProfileId != own)
+                return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的同意書"));
+        }
 
         var records = await _consentService.GetRecordsByClientAsync(clientProfileId);
         return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));
@@ -73,8 +79,8 @@ public class ConsentRecordsController : ControllerBase
     [Authorize(Policy = "CanViewConsents")]
     public async Task<IActionResult> GetByTriggerEvent(string triggerEvent)
     {
-        // 依觸發事件跨個案瀏覽為 staff 視圖，個案無權存取
-        if (IsClientRole())
+        // 依觸發事件跨個案瀏覽為 staff 視圖，非 staff 身份無權存取
+        if (!ActingAsVerifiedNonClient())
             return StatusCode(403, ApiResponse<object>.Fail("無權存取此清單"));
 
         var records = await _consentService.GetRecordsByTriggerEventAsync(triggerEvent);
