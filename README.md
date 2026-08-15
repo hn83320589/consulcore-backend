@@ -14,6 +14,8 @@
 
 - [`CLAUDE.md`](./CLAUDE.md) — 專案架構、業務規則、開發規範
 - [`docs/frontend-integration.md`](./docs/frontend-integration.md) — **前後端介接契約**（API 端點、DTO/TypeScript 型別、enum 值、權限模型）。前端開發以此為唯一事實來源
+- [`docs/backend-changes-for-frontend.md`](./docs/backend-changes-for-frontend.md) — **後端 → 前端**異動通知清單（需前端確認/處理的項目）
+- [`docs/frontend-requested-endpoints.md`](./docs/frontend-requested-endpoints.md) — **前端 → 後端**待補端點清單（2026-08-15 已結案）
 - [`SECURITY.md`](./SECURITY.md) — 機密管理與憑證輪替步驟
 
 ---

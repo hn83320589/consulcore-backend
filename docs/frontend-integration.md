@@ -5,6 +5,9 @@
 > 來源：直接從後端 `.NET 10` 程式碼萃取（Controllers / DTOs / Models / Middleware）。
 > 最後同步：2026-08-02。後端有異動時，以程式碼與此文件為準，勿憑印象猜測欄位。
 
+> 📣 **2026-08-15 有一批安全性異動需要前端確認** → 請先看 [`backend-changes-for-frontend.md`](./backend-changes-for-frontend.md)
+> （其中 **P0-1『form-submissions 補權限閘』需前端回覆**，其餘多為不影響前端或放寬）。
+
 **使用原則**
 - 所有型別以本文件的 **TypeScript 定義**為準，直接複製到前端型別檔，欄位對不上時 TS 會編譯報錯——這正是防呆機制。
 - 列舉（enum）值必須**一字不差**（全小寫 / snake_case），例如 `follow_up`、`no_show`、`in_app`、`fixed_amount`。
