@@ -24,7 +24,19 @@
 
 ## P0 — 需前端確認（可能阻斷功能）
 
-### 1. ⬜ `/api/form-submissions` 三支端點補上權限閘（原本完全無權限檢查）
+### 1. ✅ `/api/form-submissions` 三支端點補上權限閘（原本完全無權限檢查）
+
+> **前端回覆（2026-08-15）：沒有病患自助填表單流程 → 無需修改，此項結案。**
+>
+> 查證方式（非憑印象）：全專案 grep `formService` / `formBuilderStore` / `FormRenderer` / `FormBuilder`，
+> 消費端**只有** `views/admin/OrgSettingView.vue`（機構後台的表單範本管理）。
+> 個案端六個視圖（Dashboard / Appointment / NewAppointment / Consent / Notification / Settings）
+> 完全未引用表單相關 service / store / 元件。
+>
+> 表單填答目前一律由 staff（owner / admin / therapist，皆有 `client.view` / `client.update`）操作，
+> 補上的 Policy 不影響任何既有前端流程。**若日後要做病患自助初診評估，前端會先回報後端**，
+> 不會自行繞過（理解：給 client 角色 `client.view` 會造成看得到別人資料的隱私漏洞，
+> 正解是後端加「client 只能存取自己 clientProfileId 的填答」）。
 
 **後端做了什麼**
 
@@ -61,7 +73,20 @@
 
 ## P1 — 放寬帶來的 UI 調整機會（非必要，不做也不會壞）
 
-### 2. ⬜ `GET /api/client-profiles/{id}`：心理師查「非自己指派」個案，403 → 200（BR-20 代診/交接）
+### 2. ✅ `GET /api/client-profiles/{id}`：心理師查「非自己指派」個案，403 → 200（BR-20 代診/交接）
+
+> **前端已採用「建議」做法（加代診提示），並額外收斂了寫入類 UI。**
+>
+> 1. **代診提示已實作**：`ClientDetailView` 新增 `isProxyView` computed，判斷依你建議的方式——
+>    `therapists` 中不存在 `therapistUserId === 當前登入 userId && status === 'active'`。
+>    成立時於頁首顯示：「⚠ 此個案非您負責，您正以代診身分唯讀檢視，本次檢視已記錄稽核。」
+> 2. **寫入 UI 一併收斂**（依你「代診能看單筆，不能改任何東西」的邊界）：
+>    - 指派心理師 / 暫停 / 恢復 / 結案 → 改為 `client.manage` 權限才顯示（therapist 無此權限）。
+>    - 基本資料卡新增 `readonly` prop：無 `client.update` **或處於代診狀態**時隱藏編輯入口。
+>
+> **實測**（真後端 + Playwright，以 therapist 身分開啟未指派給自己的個案 id=2）：
+> BR-20 放寬生效（拿到 200，原本 403）、代診橫幅正確顯示、寫入按鈕正確消失、Tab 權限正確
+> （therapist 見晤談/備忘、不見稽核）。
 
 **後端做了什麼**
 
@@ -105,7 +130,7 @@
 
 ## P2 — 既有行為確認（不需修改，但請確保前端沒踩到）
 
-### 3. ⬜ 個案（client）角色的存取範圍已強制限縮
+### 3. ✅ 個案（client）角色的存取範圍已強制限縮
 
 為修復「個案可用任意 id 讀到**其他病患**資料」的 IDOR 漏洞，後端對 client 角色做了強制範圍化。
 **若前端病患端視圖已照 `frontend-integration.md` 使用 `/me` 的 `clientProfileId`，這裡不需要任何修改。**
@@ -125,7 +150,21 @@
 **不應**呼叫 `calendar`、`pending-renewal`、`by-trigger-event` 這三支，否則會拿到 403。
 若目前有呼叫，請改用對應的 client 可用端點（如 `calendar` → `list`）。
 
-### 4. ⬜ `X-Active-Role` 必帶，且必須是 JWT `roles` 內確實擁有的角色
+> **前端自查結果（2026-08-15）：已確認乾淨，無需修改。**
+>
+> 個案端六個視圖呼叫的 store 方法全清單：`fetchAppointments`(→`/appointments/list`)、
+> `fetchAvailableSlots`、`createAppointment`、`cancel`、`fetchRecordsByClient`(自己的 id)、
+> 通知偏好、`changePassword`。
+>
+> 三支禁用端點的呼叫者：
+> - `fetchCalendar` → 僅 `AppointmentManageView`（staff）
+> - `fetchPendingRenewals` → 僅 `OwnerDashboard` / `TherapistDashboard`（staff）
+> - `fetchRecordsByTriggerEvent` → 目前無任何呼叫端
+>
+> 另確認個案端一律使用 `/me` 的 `clientProfileId`（非 `userId`）——此為先前
+> `frontend-requested-endpoints.md` B 項回覆後已修正的部分。
+
+### 4. ✅ `X-Active-Role` 必帶，且必須是 JWT `roles` 內確實擁有的角色
 
 後端的角色判斷已全面改為 **fail-closed**：`X-Active-Role` 會與 JWT 的 `roles` claim 交叉驗證，
 **偽造或不擁有的角色一律視為無效**（不會提權，只會讓存取更受限）。
@@ -136,6 +175,36 @@
   否則會以「非 staff」身分被限縮。
 
 > 這是既有規範（見契約 §4），此處僅重申，因為後端現在會嚴格執行。
+
+> **前端回覆：這項重申讓我們抓到並修好了一個真正的 bug — 感謝提醒。**
+>
+> **問題**：前端的 axios 請求攔截器原本是從 `localStorage` 讀 `token` / `activeRole`。
+> 但 `pinia-plugin-persistedstate` 是以 `$subscribe(cb, { detached: true })` 寫入，
+> 未指定 `flush`，即 Pinia 預設的 `flush: 'pre'`（微任務才執行），**不是**賦值當下同步寫入。
+> 而攔截器是在建立請求時同步執行的，於是：
+>
+> ```js
+> activeRole.value = role   // 尚未寫進 localStorage
+> await fetchMe()           // 攔截器此刻讀 localStorage → 舊值，或多角色首次選身份時「根本還沒有值」
+> ```
+>
+> 後果：多角色帳號在 `/select-role` 首次選身份時，`X-Active-Role` **會整個漏送**；
+> 用 RoleSwitcher 切換時會送出**上一個角色**。在後端改為 fail-closed 後，這會直接導致
+> 權限錯誤或 403（在後端寬鬆時期則是「碰巧沒事」，所以一直沒被發現）。
+>
+> **修法**：httpService 改為由 `authStore` 註冊 provider（沿用既有 `registerToast` 模式，避免循環相依），
+> 攔截器直接讀 store 的 ref 當下值；保留 localStorage 作為 store 尚未初始化時的後備。
+> 這讓「寫入」與「讀取」落在同一個 tick，race 完全消除。
+>
+> **實測**（真後端 + Playwright，建立 `multi_test` 帳號，roles = `['admin','therapist']`）：
+> - 登入 → 正確導向 `/select-role` → 選「心理師」→ 進 TherapistDashboard，
+>   側欄顯示 **8 項**（therapist 權限子集），證明 `/me` 是以 `X-Active-Role: therapist` 取回。
+> - RoleSwitcher 切到「行政人員」→ 側欄變 **13 項**，且**「機構設定」正確不顯示**
+>   （admin 無 `org.settings`），證明切換後 header 同步更新、權限正確重取。
+> - 全程 0 console error。
+>
+> 這條路徑（多角色選身份 / 切換）先前從未被測過（既有測試帳號都是單一角色），
+> 因此這個 bug 一直潛伏。
 
 ---
 
@@ -162,6 +231,37 @@
 1. 在本檔對應項目標 ✅ 並註明處理方式（或「確認無需修改」）。
 2. **P0-1 請務必回覆**（有 / 沒有病患自助填表單流程）——這是唯一可能弄壞功能的項目。
 3. 若發現本檔與 `docs/frontend-integration.md` 有出入，以**後端程式碼**為準並回報後端修正文件。
+
+---
+
+## ✅ 前端處理總結（2026-08-15，四項全數完成）
+
+| 項目 | 結果 |
+|------|------|
+| P0-1 form-submissions 權限閘 | **沒有病患自助填表單流程** → 無需修改，結案 |
+| P1-2 代診放寬 | 已加代診提示橫幅，並額外收斂寫入類 UI |
+| P2-3 client 存取限縮 | 自查乾淨，個案端未呼叫三支禁用端點 |
+| P2-4 X-Active-Role | **抓到並修好 race bug**（詳見該項），已實測多角色切換 |
+
+**額外修正（本次連帶發現）**：`ClientDetailView` 原本無條件呼叫 `GET /users`（需 `staff.manage`）
+以填充指派心理師下拉，therapist 開啟頁面時必然 403。已改為僅在具 `staff.manage` 時呼叫。
+這是前端先前自己引入的缺陷，由本次 therapist 角色實測暴露。
+
+**驗證**：`type-check` / `lint`(0 problems) / `build` 全綠；真後端 + Playwright 實測
+（多角色登入→選身份→切換身份、代診檢視、個案/收費/機構設定頁）全程 0 console error。
+
+### 稽核 `resourceId` 語意（附帶事項）已知悉
+`client_memo` 與 `form_submission`(by-client) 的 `resourceId` 帶的是**個案 id**、非該筆紀錄 id —— 已記錄。
+前端目前 `ClientDetailView` 稽核分頁只查 `resourceType=client_profile&resourceId={個案id}`，
+語意一致、不受影響；`AuditLogView` 為通用查詢（不預設 resourceId），亦不受影響。
+若日後要在個案頁一併呈現備忘/表單的檢視軌跡，會依上表用個案 id 查詢。
+
+### 回覆後端待辦最後一項（寫入授權）
+> 「交接後的新心理師無法編輯前手留下的紀錄（只能另寫新紀錄）——若實務上需要『目前指派心理師可編輯』請提出。」
+
+前端**目前沒有**這個需求，維持現狀即可。理由：晤談紀錄在臨床上屬「作者責任」文件，
+由建立者本人負責、他人另寫新紀錄，符合 BR-08 的鎖定/留痕設計，也較不易產生爭議。
+若之後實務端提出需求，前端會另行回報，不會自行放寬 UI。
 
 ---
 

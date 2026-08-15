@@ -38,6 +38,22 @@ assert() {
   fi
 }
 
+# 日期一律相對於「今天」計算，不可寫死：
+# BR-05 展班會把 startDate 夾到今天，寫死的日期一旦過期，展班區間就會變成
+# 「start > end」而整個測試在 1.6 掛掉（測試資料腐化）。
+# 班表範本建在週一~週五，故取「下一個週一」與其隔天（週二）作為預約用日期。
+DATES=$(python3 -c "
+import datetime as dt
+today = dt.date.today()
+days_ahead = (7 - today.weekday()) % 7 or 7   # weekday(): 週一=0；0 → 取 7 確保嚴格未來
+monday = today + dt.timedelta(days=days_ahead)
+print(monday, monday + dt.timedelta(days=1), monday + dt.timedelta(days=34))
+")
+read -r MONDAY TUESDAY EXPAND_END <<< "$DATES"
+EXPAND_START="$MONDAY"
+# 變數後緊接全形標點時必須用 ${}，否則 bash 會把全形字元併入變數名（配 set -u 會直接中止）
+echo "測試日期：展班 ${EXPAND_START} ~ ${EXPAND_END}；預約日 週一=${MONDAY} 週二=${TUESDAY}"
+
 echo "========================================"
 echo " 情境 1：新機構從零開始"
 echo "========================================"
@@ -97,7 +113,7 @@ assert "10 schedule templates" "$TMPL_COUNT" "10"
 # 1.6 Expand schedule
 echo "--- 1.6 Expand schedule ---"
 EXPAND=$(api /api/schedule-slots/expand -X POST -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
-  -H "Content-Type: application/json" -d '{"startDate":"2026-04-27","endDate":"2026-05-31"}')
+  -H "Content-Type: application/json" -d "{\"startDate\":\"$EXPAND_START\",\"endDate\":\"$EXPAND_END\"}")
 CREATED=$(echo "$EXPAND" | jq_ "print(d['data']['createdCount'])")
 assert "Slots created > 0" "$([ "$CREATED" -gt 0 ] && echo yes || echo no)" "yes"
 
@@ -181,7 +197,7 @@ CLIENT_TOKEN=$(echo "$LOGIN2" | jq_ "print(d['data']['token'])")
 
 # 2.4 Book initial appointment
 echo "--- 2.4 Book initial appointment ---"
-SLOT_ID=$(api "/api/appointments/available-slots?startDate=2026-04-27&endDate=2026-04-27&therapistUserId=2" \
+SLOT_ID=$(api "/api/appointments/available-slots?startDate=$MONDAY&endDate=$MONDAY&therapistUserId=2" \
   -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print(d['data'][0]['id'])")
 APT1=$(api /api/appointments -X POST -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
   -H "Content-Type: application/json" \
@@ -268,12 +284,11 @@ api /api/client-memos -X POST -H "Authorization: Bearer $THER_TOKEN" -H "X-Activ
   -d "{\"clientProfileId\":$CLIENT_ID,\"category\":\"personality\",\"content\":\"個案性格內向，較需要時間暖身\"}" > /dev/null
 assert "Memo created" "ok" "ok"
 
-# 2.14 Close case
-echo "--- 2.14 Close case ---"
-api "/api/client-profiles/$CLIENT_ID/status" -X PATCH -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
-  -H "Content-Type: application/json" -d '{"status":"closed"}' > /dev/null
-STATUS=$(api "/api/client-profiles/$CLIENT_ID" -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print(d['data']['status'])")
-assert "Client closed" "$STATUS" "closed"
+# 註：結案（close case）刻意移到「情境 4 移轉」之後才做。
+# ChangeStatusAsync 結案時會把所有 active 的心理師關係一併關閉（正確業務行為），
+# 若在此處先結案，情境 3b「therapist_a 看得到自己的個案」與情境 4 的移轉
+# （TransferTherapistAsync 要求存在 active 關係）都會失敗。
+# 實際生命週期順序本來就是：建立 → 晤談/收費 → 移轉 → 結案。
 
 echo ""
 echo "========================================"
@@ -368,9 +383,19 @@ AUDIT_HIT=$(api "/api/audit-logs?resourceType=client_profile&resourceId=$CLIENT2
 assert "Cross-therapist (locum) view is audited" "$AUDIT_HIT" "yes"
 
 # 安全：therapist 偽造 owner header 也不可取得全機構個案（scope 不提升）
+# 注意：PermissionHandler 會先擋下偽造角色並回 403（body 為空、非 JSON），
+# 因此不可直接 json.load；403 等同「看不到任何個案」，比回 200 空清單更嚴格。
 SPOOF_CLIENTS=$(api /api/client-profiles -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: owner")
-assert "Therapist spoofing owner does NOT see therapist_b's client" \
-  "$(echo "$SPOOF_CLIENTS" | jq_ "print('yes' if any(c['id']==$CLIENT2_ID for c in (d.get('data') or [])) else 'no')")" "no"
+SPOOF_SEEN=$(python3 -c "
+import sys, json
+raw = sys.stdin.read().strip()
+try:
+    data = json.loads(raw).get('data') or []
+except Exception:
+    data = []          # 403 / 空回應
+print('yes' if any(c['id'] == $CLIENT2_ID for c in data) else 'no')
+" <<< "$SPOOF_CLIENTS")
+assert "Therapist spoofing owner does NOT see therapist_b's client" "$SPOOF_SEEN" "no"
 
 # 個案跨病人 IDOR：小明(client) 只能存取自己（$CLIENT_ID），不可讀 $CLIENT2_ID 的資料
 # 正向：查自己的常態預約/同意書 → 200
@@ -423,6 +448,17 @@ assert "Therapist_b now sees transferred client" \
 TA_AFTER=$(api /api/client-profiles -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: therapist")
 assert "Therapist_a no longer sees transferred client" \
   "$(echo "$TA_AFTER" | jq_ "print('yes' if any(c['id']==$CLIENT_ID for c in d['data']) else 'no')")" "no"
+
+# 結案（生命週期終點）：須在移轉之後，因結案會關閉所有 active 心理師關係
+echo "--- 結案 Close case ---"
+api "/api/client-profiles/$CLIENT_ID/status" -X PATCH -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
+  -H "Content-Type: application/json" -d '{"status":"closed"}' > /dev/null
+STATUS=$(api "/api/client-profiles/$CLIENT_ID" -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print(d['data']['status'])")
+assert "Client closed" "$STATUS" "closed"
+# 結案後：接手的 therapist_b 也不應再於清單看到（active 關係已關閉）
+TB_AFTER_CLOSE=$(api /api/client-profiles -H "Authorization: Bearer $THERB_TOKEN" -H "X-Active-Role: therapist")
+assert "Closed client leaves therapist_b's active list" \
+  "$(echo "$TB_AFTER_CLOSE" | jq_ "print('yes' if any(c['id']==$CLIENT_ID for c in d['data']) else 'no')")" "no"
 
 # 建立考核 + 違規紀錄（供加密驗證覆蓋）
 api /api/performance-reviews -X POST -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
@@ -506,14 +542,14 @@ echo "========================================"
 
 # E1: Same client same timeslot conflict
 echo "--- E1: Client double-booking ---"
-SLOT_E1=$(api "/api/appointments/available-slots?startDate=2026-04-28&endDate=2026-04-28&therapistUserId=2" \
+SLOT_E1=$(api "/api/appointments/available-slots?startDate=$TUESDAY&endDate=$TUESDAY&therapistUserId=2" \
   -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print(d['data'][0]['id'])")
 api /api/appointments -X POST -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
   -H "Content-Type: application/json" \
   -d "{\"clientProfileId\":$CLIENT_ID,\"scheduleSlotId\":$SLOT_E1}" > /dev/null
 
 # Try same timeslot with different therapist
-SLOT_E1B=$(api "/api/appointments/available-slots?startDate=2026-04-28&endDate=2026-04-28&therapistUserId=3" \
+SLOT_E1B=$(api "/api/appointments/available-slots?startDate=$TUESDAY&endDate=$TUESDAY&therapistUserId=3" \
   -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "
 for s in d['data']:
     if s['startTime'] == '09:00': print(s['id']); break
@@ -544,7 +580,7 @@ assert "Unlock audit logged" "$([ "$AUDIT_UNLOCK" -ge 1 ] && echo yes || echo no
 # E4: Re-expand doesn't overwrite
 echo "--- E4: Re-expand skip ---"
 REEXPAND=$(api /api/schedule-slots/expand -X POST -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" \
-  -H "Content-Type: application/json" -d '{"startDate":"2026-04-27","endDate":"2026-05-31"}')
+  -H "Content-Type: application/json" -d "{\"startDate\":\"$EXPAND_START\",\"endDate\":\"$EXPAND_END\"}")
 assert "Re-expand created=0" "$(echo "$REEXPAND" | jq_ "print(d['data']['createdCount'])")" "0"
 
 echo ""
