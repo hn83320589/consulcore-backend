@@ -110,3 +110,28 @@ client 帳號登入後，用 `/me` 回傳的 `clientProfileId` 去查自己的�
 1. 更新 `docs/frontend-integration.md`（新增端點的路由/query/DTO/Policy）。
 2. 在本檔對應項目標 ✅ 並註明契約已更新。
 3. 通知前端：前端會移除對應的 `TODO(backend-backlog)` 標記並恢復功能（BillingManageView Tab1/Tab2/匯出、MetricsTrend、ClientDetail 稽核/套餐/常態預約分頁）。
+
+---
+
+## ✅ 前端消費狀態（2026-08-15，本項可結案）
+
+後端 P1/P2 + A/B 全數完成後，前端 `consulcore-frontend` 已全部接上並驗證（type-check / lint / build 全綠，並對真實後端做 runtime 抽驗）。`TODO(backend-backlog)` 標記已全數移除（`grep` 為 0）。
+
+**P1（1–6）已消費，功能恢復：**
+1. `GET /billing` → BillingManageView 付款紀錄 Tab 恢復完整清單 + 篩選（日期/個案/心理師/狀態）。
+2. `GET /billing/packages` → 套餐總覽 Tab 恢復完整清單；ClientDetail 收費分頁套餐明細恢復（PackageUsageBar）。
+3. `GET /billing/export` → 匯出 CSV 按鈕恢復（blob 下載）。
+4. `GET /performance-reviews/metrics/{id}/trend` → PerformanceView 趨勢圖（MetricsTrend）接回，含指標/期間/心理師選擇。
+5. `GET /audit-logs?resourceId=` → ClientDetail 稽核分頁改用 `resourceType=client_profile&resourceId={id}` 精準查（不再抓全部再前端過濾）。
+6. `GET /appointment-series/by-client/{clientProfileId}` → ClientDetail 常態預約恢復完整清單（不再只顯示待續約）。
+
+**P2（7–9）已消費：**
+7. `GET /appointments/{id}` → appointmentService/store 便利方法已加（供深連結）。
+8. `GET /session-notes/{id}` → **修復深連結**：直接以 URL 進 `/admin/sessions/:id/edit` 時，前端會以此端點載入紀錄（原本 store 無資料則表單空白）。
+9. `GET /consent-records`（`?clientProfileId=&status=&triggerEvent=`）→ ConsentManageView 簽署紀錄查詢恢復為「觸發事件 + 狀態」彈性篩選（原降級為只能依觸發事件瀏覽）。
+
+**A/B 兩個回覆已據以修正前端（兩者原為前端錯誤假設，感謝點出）：**
+- **A（resourceType snake_case）**：前端稽核篩選與 ClientDetail 過濾原用 PascalCase（`ClientProfile`），已全部改為 snake_case（`client_profile` 等），AuditLogView 資源下拉改用契約 7.15 的 snake_case 值 + 中文 label。
+- **B（userId ≠ clientProfileId）**：前端原誤用登入者 `userId` 當 `clientProfileId`（會抓到別的個案，屬隱私 bug）。已改：`/me` 的 `clientProfileId` 存入 authStore，個案端 4 個視圖（Dashboard/Appointment/NewAppointment/Consent）一律改用它。
+
+> 結論：本待辦清單前後端皆已完成，**可結案**。後續若有新端點需求，前端會另開清單。
