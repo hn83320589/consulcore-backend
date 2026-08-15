@@ -214,6 +214,7 @@ AuditLog（不可刪除, changes 加密）
 | BR-17 | 定期考核預設 hidden，Owner 手動/排程開放 |
 | BR-18 | 量化指標心理師可見，質性考核僅 Owner |
 | BR-19 | 同一帳號可擁有多角色，身份空間隔離 |
+| BR-20 | 代診/交接：therapist 可**唯讀**非自己指派個案的紀錄（個別紀錄，非清單），寫入仍限紀錄建立者；跨心理師檢視**必須留稽核** |
 
 ---
 
@@ -292,3 +293,4 @@ dotnet test                      # 測試
 |------|------|
 | 2026-04-03 | 初始版本，Phase 1 完整架構 |
 | 2026-07-30 | 稽核修復（安全/通知/排程/正確性）；修復 X-Active-Role 偽造提權；新增 MustChangePasswordMiddleware 與 ScheduledMaintenanceService；Discount 改 therapist 層級（+TherapistUserId 可空）；通知 Seeder 補至 24 筆（8 event×3 channel）；稽核新增 PDF 匯出；密鑰移出版控；新增前端介接文件 `docs/frontend-integration.md` 與 `SECURITY.md` |
+| 2026-08-15 | IDOR 改 fail-closed（新增 `Authorization/ActiveRoleScope`，以 JWT 驗證角色取代可偽造 header）；BR-20 代診/交接唯讀（放寬 ClientProfile 單筆 403、補 ClientMemo/FormSubmission 檢視稽核、FormSubmission 補權限閘）；`.claude/settings.json` 移出版控 |

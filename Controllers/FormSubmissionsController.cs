@@ -19,6 +19,7 @@ public class FormSubmissionsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "CanUpdateClients")]
     public async Task<IActionResult> Submit([FromBody] SubmitFormDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -28,6 +29,7 @@ public class FormSubmissionsController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize(Policy = "CanViewClients")]
     public async Task<IActionResult> GetById(int id)
     {
         var submission = await _formService.GetSubmissionByIdAsync(id);
@@ -35,6 +37,7 @@ public class FormSubmissionsController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
+    [Authorize(Policy = "CanViewClients")]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
         var submissions = await _formService.GetSubmissionsByClientAsync(clientProfileId);

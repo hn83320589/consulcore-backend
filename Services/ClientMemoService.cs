@@ -25,6 +25,10 @@ public class ClientMemoService
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
 
+        // 個案備忘屬臨床紀錄，代診可讀他人備忘 → 留檢視稽核（BR-16 唯讀由 IsEditable 標記）
+        await _audit.LogAsync("view", "client_memo", clientProfileId,
+            $"檢視個案 {clientProfileId} 的備忘（{memos.Count} 筆）");
+
         // BR-16: 標記可編輯/唯讀
         return memos.Select(m => MapToDto(m, currentTherapistUserId)).ToList();
     }

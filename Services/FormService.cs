@@ -220,6 +220,10 @@ public class FormService
             .FirstOrDefaultAsync(s => s.Id == id)
             ?? throw new KeyNotFoundException("表單提交不存在");
 
+        // 表單填答屬臨床紀錄，代診可讀他人填答 → 留檢視稽核
+        await _audit.LogAsync("view", "form_submission", submission.Id,
+            $"檢視表單填答 (id={id}, client={submission.ClientProfileId})");
+
         return new FormSubmissionResponseDto
         {
             Id = submission.Id,
@@ -252,6 +256,10 @@ public class FormService
             .Where(s => s.ClientProfileId == clientProfileId)
             .OrderByDescending(s => s.SubmittedAt)
             .ToListAsync();
+
+        // 表單填答屬臨床紀錄，代診可讀他人填答 → 留檢視稽核
+        await _audit.LogAsync("view", "form_submission", clientProfileId,
+            $"檢視個案 {clientProfileId} 的表單填答（{submissions.Count} 筆）");
 
         return submissions.Select(s => new FormSubmissionResponseDto
         {

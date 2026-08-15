@@ -59,11 +59,11 @@ public class ClientProfilesController : ControllerBase
     [Authorize(Policy = "CanViewClients")]
     public async Task<IActionResult> GetById(int id)
     {
-        // therapist 僅能看到自己被指派的個案
-        if (!HasFullClientScope() && !await _clientService.IsAssignedToTherapistAsync(id, CurrentUserId()))
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取此個案"));
+        // 代診/交接：therapist 可唯讀非自己指派的個案，但跨心理師檢視須留稽核（見決策 locum-readonly-clinical-records）
+        var crossTherapist = !HasFullClientScope()
+            && !await _clientService.IsAssignedToTherapistAsync(id, CurrentUserId());
 
-        var client = await _clientService.ViewByIdAsync(id);
+        var client = await _clientService.ViewByIdAsync(id, crossTherapist);
         return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client));
     }
 

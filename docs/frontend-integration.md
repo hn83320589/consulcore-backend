@@ -579,6 +579,7 @@ interface FormSubmissionResponse {
 | GET | `/api/form-submissions/{id}` | — | `FormSubmissionResponse` |
 | GET | `/api/form-submissions/by-client/{clientProfileId}` | — | `FormSubmissionResponse[]` |
 
+> - **權限（2026-08-15 起）**：`GET` 兩支需 `client.view`、`POST` 需 `client.update`（原本無權限閘，現已補上）。若某角色（如個案本人）需自行填/看表單，請確認該角色具備對應權限。
 > - 系統預設表單（`isSystemDefault=true`）**不可修改/刪除** → 需先 `clone` 再改，否則回 400。
 > - 已有填答紀錄的表單**不可再改結構**（傳 `sections`）→ 回 400，請 clone 為新版。前端編輯 UI 應對這兩種情況給明確引導。
 

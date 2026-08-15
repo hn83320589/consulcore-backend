@@ -40,10 +40,12 @@ public class ClientService
     }
 
     // controller 檢視單一個案專用：記錄檢視稽核後回傳（與內部 mapper GetByIdAsync 區隔，避免異動時誤記 view）
-    public async Task<ClientProfileResponseDto> ViewByIdAsync(int id)
+    // crossTherapist=true 代表代診/非指派存取，於稽核描述標示以利事後追溯
+    public async Task<ClientProfileResponseDto> ViewByIdAsync(int id, bool crossTherapist = false)
     {
         var dto = await GetByIdAsync(id);
-        await _audit.LogAsync("view", "client_profile", id, $"檢視個案 (id={id})");
+        var detail = crossTherapist ? $"檢視個案 (id={id})（代診/非指派存取）" : $"檢視個案 (id={id})";
+        await _audit.LogAsync("view", "client_profile", id, detail);
         return dto;
     }
 
