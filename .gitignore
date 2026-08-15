@@ -9,6 +9,10 @@ appsettings.*.local.json
 .env
 *.user
 
+# === Claude Code 個人設定（本機權限/hook，不提交）===
+.claude/settings.json
+.claude/settings.local.json
+
 # === IDE ===
 .vs/
 .idea/
