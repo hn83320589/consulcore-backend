@@ -69,7 +69,8 @@ python3 -c "import os, base64; print(base64.b64encode(os.urandom(32)).decode())"
 dotnet restore                   # 還原套件
 dotnet build                     # 建置（應為 0 warning）
 dotnet run                       # 啟動 API（http://localhost:5037）
-bash tests/integration-test.sh   # 整合測試（需 API 執行中）
+dotnet test                      # 單元 + API 整合測試（不需啟動 API）
+bash tests/integration-test.sh   # 端對端情境測試（需 API 執行中）
 
 dotnet ef migrations add <name> -o Migrations/Sqlite  # 新增 migration
 dotnet ef database update                             # 套用 migration 到資料庫
