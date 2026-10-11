@@ -1,8 +1,10 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Auth;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace consulcore_backend.Controllers;
 
@@ -18,6 +20,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);

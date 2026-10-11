@@ -171,24 +171,20 @@ MUST_CHANGE=$(echo "$CLIENT_RESP" | jq_ "print(d['data']['mustChangePassword'])"
 assert "Client created with account" "$(echo "$CLIENT_RESP" | jq_ "print(d['success'])")" "True"
 assert "MustChangePassword=True" "$MUST_CHANGE" "True"
 
-# 2.2 Default password login
-echo "--- 2.2 Default password login ---"
-CLIENT_USER=$(api /api/users -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "
-for u in d['data']:
-    if 'client' in u['roles']:
-        print(u['username']); break
-")
-# Password: idNumber last 4 (6789) + birthday MMDD (0615)
+# 2.2 Initial password login（建立時一次性回傳的隨機初始密碼）
+echo "--- 2.2 Initial password login ---"
+CLIENT_USER=$(echo "$CLIENT_RESP" | jq_ "print(d['data']['initialCredentials']['username'])")
+CLIENT_INIT_PW=$(echo "$CLIENT_RESP" | jq_ "print(d['data']['initialCredentials']['password'])")
 LOGIN_RESP=$(api /api/auth/login -X POST -H "Content-Type: application/json" \
-  -d "{\"username\":\"$CLIENT_USER\",\"password\":\"67890615\"}")
-assert "Default password login" "$(echo "$LOGIN_RESP" | jq_ "print(d['success'])")" "True"
+  -d "{\"username\":\"$CLIENT_USER\",\"password\":\"$CLIENT_INIT_PW\"}")
+assert "Initial password login" "$(echo "$LOGIN_RESP" | jq_ "print(d['success'])")" "True"
 assert "MustChangePassword flag" "$(echo "$LOGIN_RESP" | jq_ "print(d['data']['mustChangePassword'])")" "True"
 CLIENT_TOKEN=$(echo "$LOGIN_RESP" | jq_ "print(d['data']['token'])")
 
 # 2.3 Change password
 echo "--- 2.3 Force change password ---"
 api /api/auth/change-password -X PUT -H "Authorization: Bearer $CLIENT_TOKEN" \
-  -H "Content-Type: application/json" -d '{"currentPassword":"67890615","newPassword":"NewClient123!"}' > /dev/null
+  -H "Content-Type: application/json" -d "{\"currentPassword\":\"$CLIENT_INIT_PW\",\"newPassword\":\"NewClient123!\"}" > /dev/null
 LOGIN2=$(api /api/auth/login -X POST -H "Content-Type: application/json" \
   -d "{\"username\":\"$CLIENT_USER\",\"password\":\"NewClient123!\"}")
 assert "Password changed, mustChange=False" "$(echo "$LOGIN2" | jq_ "print(d['data']['mustChangePassword'])")" "False"

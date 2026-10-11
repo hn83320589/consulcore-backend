@@ -62,4 +62,16 @@ public class ActiveRoleScopeTests
 
         Assert.False(ActiveRoleScope.ActingAsVerifiedNonClient(RequestWithActiveRole(header), user));
     }
+
+    [Fact]
+    public void ActingAsVerified_requires_header_and_jwt_to_name_the_same_role()
+    {
+        var owner = UserWithRolesClaim("[\"owner\",\"therapist\"]");
+        var admin = UserWithRolesClaim("[\"admin\"]");
+
+        Assert.True(ActiveRoleScope.ActingAsVerified(RequestWithActiveRole("owner"), owner, "owner"));
+        Assert.False(ActiveRoleScope.ActingAsVerified(RequestWithActiveRole("therapist"), owner, "owner"));
+        Assert.False(ActiveRoleScope.ActingAsVerified(RequestWithActiveRole("owner"), admin, "owner"));
+        Assert.False(ActiveRoleScope.ActingAsVerified(RequestWithActiveRole(null), owner, "owner"));
+    }
 }

@@ -138,7 +138,7 @@ X-Active-Role: <目前作用中的角色>      // 例如 owner / admin / therapi
 
 ### 4.4 首次登入強制改密碼流程
 
-個案帳號由機構代建時，預設密碼為「身分證後 4 碼 + 生日 MMDD」，`mustChangePassword=true`。
+個案帳號由機構代建時，帳號（`client_{機構}_{隨機}`）與**隨機初始密碼**只在建立的回應 `initialCredentials` 中回傳一次（明文不保存），由櫃檯當場交付；`mustChangePassword=true`。
 
 - 此狀態下，後端中介層會**攔截除下列以外的所有請求並回 403**（message：`首次登入請先變更密碼後才能使用其他功能`）：
   - `PUT /api/auth/change-password`
@@ -340,7 +340,7 @@ interface CreateClientProfileRequest {
   referralSource?: string | null;
   notes?: string | null;
   medicalHistory?: string | null;
-  createAccount: boolean;       // true=同時建個案帳號（預設密碼身分證後4碼+生日MMDD）
+  createAccount: boolean;       // true=同時建個案帳號（帳密見回應的 initialCredentials，只回傳一次）
   therapistUserId?: number | null; // 建檔時指派心理師
 }
 // UpdateClientProfileRequest：同上前 14 個欄位，皆選填，無 createAccount/therapistUserId
@@ -357,6 +357,7 @@ interface ClientProfileResponse {
   emergencyContactRelationship?: string | null; occupation?: string | null;
   referralSource?: string | null; notes?: string | null; medicalHistory?: string | null;
   status: ClientStatus; userId?: number | null; mustChangePassword: boolean;
+  initialCredentials?: { username: string; password: string }; // 只出現在「建立附帳號個案」的回應
   therapists: TherapistInfo[]; createdAt: string; updatedAt: string;
 }
 ```

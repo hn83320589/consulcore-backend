@@ -48,7 +48,7 @@ python3 -c "import os, base64; print(base64.b64encode(os.urandom(32)).decode())"
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-設定：`Jwt__SecretKey=<新金鑰>`；並移除 `appsettings.json` 內的 dev placeholder。
+設定：`Jwt__SecretKey=<新金鑰>`。`appsettings.json` 內的 `DEV-ONLY-` placeholder 只供本機開發；非 Development 環境沿用它或金鑰短於 32 bytes 時，API 會拒絕啟動（`Authorization/JwtSecretKey.cs`）。
 
 ## 執行整合測試
 

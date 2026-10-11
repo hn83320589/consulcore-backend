@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Role;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,12 +35,17 @@ public class RolePermissionService
             .ToListAsync();
     }
 
-    public async Task<RoleResponseDto> UpdateRolePermissionsAsync(int roleId, UpdateRolePermissionsDto dto)
+    public async Task<RoleResponseDto> UpdateRolePermissionsAsync(
+        int roleId, UpdateRolePermissionsDto dto, bool actorIsOwner)
     {
         var role = await _db.Roles
             .Include(r => r.RolePermissions)
             .FirstOrDefaultAsync(r => r.Id == roleId)
             ?? throw new KeyNotFoundException("角色不存在");
+
+        // 系統角色（含 admin 自己）的權限只能由擁有者調整，避免 admin 替自己加權限
+        if (role.IsSystemDefault && !actorIsOwner)
+            throw new ForbiddenException("只有機構擁有者可以調整系統角色的權限");
 
         // 驗證所有 permission codes 都存在
         var permissions = await _db.Permissions

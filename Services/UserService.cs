@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.User;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,8 +37,28 @@ public class UserService
         return MapToDto(user);
     }
 
-    public async Task<UserResponseDto> CreateAsync(CreateUserDto dto, int orgId)
+    // 擁有者帳號與擁有者角色只能由擁有者本人處理：staff.manage（admin 也有）不足以接管機構
+    private const string OwnerRole = "owner";
+
+    private async Task<bool> IsOwnerAsync(int userId) =>
+        await _db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.Role.Name == OwnerRole);
+
+    private async Task EnsureCanManageAsync(int targetUserId, bool actorIsOwner)
     {
+        if (!actorIsOwner && await IsOwnerAsync(targetUserId))
+            throw new ForbiddenException("只有機構擁有者可以變更擁有者帳號");
+    }
+
+    private static void EnsureCanAssignRoles(IEnumerable<string>? roleNames, bool actorIsOwner)
+    {
+        if (!actorIsOwner && roleNames != null && roleNames.Contains(OwnerRole))
+            throw new ForbiddenException("只有機構擁有者可以指派擁有者角色");
+    }
+
+    public async Task<UserResponseDto> CreateAsync(CreateUserDto dto, int orgId, bool actorIsOwner)
+    {
+        EnsureCanAssignRoles(dto.Roles, actorIsOwner);
+
         // 檢查 username 是否已存在（跨機構唯一）
         var usernameExists = await _db.Users
             .IgnoreQueryFilters()
@@ -83,8 +104,11 @@ public class UserService
         return await GetByIdAsync(user.Id);
     }
 
-    public async Task<UserResponseDto> UpdateAsync(int id, UpdateUserDto dto)
+    public async Task<UserResponseDto> UpdateAsync(int id, UpdateUserDto dto, bool actorIsOwner)
     {
+        EnsureCanAssignRoles(dto.Roles, actorIsOwner);
+        await EnsureCanManageAsync(id, actorIsOwner);
+
         var user = await _db.Users
             .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Id == id)
@@ -157,8 +181,10 @@ public class UserService
         await _audit.LogAsync("delete", "user", id, $"刪除使用者 {user.Username}");
     }
 
-    public async Task ResetPasswordAsync(int id, ResetPasswordDto dto)
+    public async Task ResetPasswordAsync(int id, ResetPasswordDto dto, bool actorIsOwner)
     {
+        await EnsureCanManageAsync(id, actorIsOwner);
+
         var user = await _db.Users.FindAsync(id)
             ?? throw new KeyNotFoundException("使用者不存在");
 
@@ -169,8 +195,10 @@ public class UserService
         await _audit.LogAsync("reset_password", "user", id, $"重設使用者 {user.Username} 密碼");
     }
 
-    public async Task<UserResponseDto> ToggleActiveAsync(int id)
+    public async Task<UserResponseDto> ToggleActiveAsync(int id, bool actorIsOwner)
     {
+        await EnsureCanManageAsync(id, actorIsOwner);
+
         var user = await _db.Users.FindAsync(id)
             ?? throw new KeyNotFoundException("使用者不存在");
 

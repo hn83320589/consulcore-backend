@@ -39,6 +39,38 @@ public class ApiTestClient(HttpClient http)
     public async Task<JsonElement> LoginAsync(string username, string password) =>
         await PostOkAsync(null, null, "/api/auth/login", new { username, password });
 
+    public async Task<string> LoginTokenAsync(string username, string password) =>
+        (await LoginAsync(username, password)).GetProperty("token").GetString()!;
+
+    public record ClientCredentials(int ClientProfileId, string Username, string Password);
+
+    /// <summary>建立附帳號的個案，回傳建立時一次性提供的帳號與初始密碼（尚未改密碼）。</summary>
+    public async Task<ClientCredentials> CreateClientAccountAsync(string ownerToken)
+    {
+        var client = await PostOkAsync(ownerToken, "owner", "/api/client-profiles", new
+        {
+            name = "測試個案",
+            idNumber = "A123456789",
+            dateOfBirth = "1995-06-15",
+            createAccount = true,
+        });
+        var credentials = client.GetProperty("initialCredentials");
+        return new ClientCredentials(
+            client.GetProperty("id").GetInt32(),
+            credentials.GetProperty("username").GetString()!,
+            credentials.GetProperty("password").GetString()!);
+    }
+
+    /// <summary>建立個案帳號並完成首次改密碼，回傳可正常使用的個案 token。</summary>
+    public async Task<string> CreateActiveClientTokenAsync(string ownerToken)
+    {
+        var account = await CreateClientAccountAsync(ownerToken);
+        var firstToken = await LoginTokenAsync(account.Username, account.Password);
+        await ReadDataAsync(await SendAsync(HttpMethod.Put, "/api/auth/change-password", firstToken, "client",
+            new { currentPassword = account.Password, newPassword = "NewPass123!" }));
+        return await LoginTokenAsync(account.Username, "NewPass123!");
+    }
+
     public async Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string url, string? token, string? activeRole, object? body = null)
     {
