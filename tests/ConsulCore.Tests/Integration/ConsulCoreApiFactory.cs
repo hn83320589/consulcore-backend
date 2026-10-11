@@ -28,6 +28,8 @@ public class ConsulCoreApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:DefaultConnection", $"Data Source={_dbPath}");
         builder.UseSetting("Encryption:Key", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
         builder.UseSetting("Jwt:SecretKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)));
+        // 一般測試會大量登入，放寬限流；限流本身由 LoginSecurityTests 以較低上限驗證
+        builder.UseSetting("RateLimiting:Login:PermitLimit", "10000");
 
         builder.ConfigureTestServices(services =>
         {

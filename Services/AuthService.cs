@@ -34,7 +34,15 @@ public class AuthService
             .FirstOrDefaultAsync(u => u.Username == dto.Username);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        {
+            // 帳號存在才知道屬於哪個機構，才能寫進該機構的稽核；不存在的帳號只記應用程式 log
+            if (user != null)
+            {
+                await _audit.LogAsync("login_failed", "user", user.Id, "登入失敗：密碼錯誤",
+                    organizationId: user.OrganizationId, userId: user.Id);
+            }
             throw new UnauthorizedAccessException("帳號或密碼錯誤");
+        }
 
         if (!user.IsActive)
             throw new UnauthorizedAccessException("帳號已停用");

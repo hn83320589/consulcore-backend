@@ -1,11 +1,14 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.Data.Encryption;
 using consulcore_backend.Middleware;
+using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -72,6 +75,27 @@ builder.Services.AddScoped<AuditLogService>();
 
 // 背景排程：套餐到期、考核可見性
 builder.Services.AddHostedService<ScheduledMaintenanceService>();
+
+// 登入限流：每個 IP 每分鐘最多 N 次（預設 10），超過回 429，降低暴力猜密碼的速度
+var loginPermitLimit = builder.Configuration.GetValue("RateLimiting:Login:PermitLimit", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy(RateLimitPolicies.Login, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = loginPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            ApiResponse<object>.Fail("登入嘗試過於頻繁，請稍後再試"), cancellationToken);
+    };
+});
 
 // JWT Authentication
 var jwtSecretKey = JwtSecretKey.Validate(
@@ -187,6 +211,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 
