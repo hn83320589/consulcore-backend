@@ -132,11 +132,11 @@ await _audit.LogAsync("update", "session_note", noteId, "解鎖晤談紀錄",
 
 ### 6. 背景排程
 
-`ScheduledMaintenanceService`（`IHostedService`，每 24 小時）跨機構執行系統維護：
+`ScheduledMaintenanceService`（`IHostedService`，每天診所時間 03:00）跨機構執行系統維護：
 
 - 套餐到期 → `expired`
 - 考核可見性排程（`VisibleFrom` 到時開放 / `VisibleUntil` 到期收回，BR-17）
-- 常態預約續約提醒（剩餘 ≤ 2 次 → 通知心理師）
+- 常態預約續約提醒（剩餘 ≤ 2 次 → 通知心理師；每個系列只提醒一次，續約後重置 `RenewalRemindedAt`）
 
 > 背景執行無 HttpContext，`_currentOrgId` 為 null 會讓 Global Query Filter 過濾掉所有列。
 > 跨機構維護任務**必須**用 `IgnoreQueryFilters()` 才掃得到全機構資料。
