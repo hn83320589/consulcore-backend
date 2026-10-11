@@ -113,7 +113,7 @@ Request Headers: X-Active-Role: therapist   （organizationId 只從 JWT 取，�
 ```
 
 `mustChangePassword=true`（個案以櫃檯交付的隨機初始密碼首次登入）時，`MustChangePasswordMiddleware`
-攔截除 `/api/auth/change-password`、`/api/auth/me`、`/api/auth/logout` 以外的所有請求回 403，
+攔截除 `/api/auth/change-password`、`/api/auth/me` 以外的所有請求回 403（登出是純前端行為，沒有後端端點），
 強制先改密碼；改密碼後需重新登入才會拿到 `mustChangePassword=false` 的新 token。
 
 ### 5. 稽核

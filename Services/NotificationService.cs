@@ -170,9 +170,11 @@ public class NotificationService
                 && n.Status == NotificationStatus.Sent);
     }
 
-    public async Task MarkAsReadAsync(int notificationId)
+    public async Task MarkAsReadAsync(int notificationId, int userId)
     {
-        var n = await _db.NotificationLogs.FindAsync(notificationId)
+        // 只能標記自己的通知；別人的通知一律當作不存在（不透露該通知存在）
+        var n = await _db.NotificationLogs
+            .FirstOrDefaultAsync(x => x.Id == notificationId && x.RecipientId == userId)
             ?? throw new KeyNotFoundException("通知不存在");
         n.Status = NotificationStatus.Read;
         n.ReadAt = DateTime.UtcNow;

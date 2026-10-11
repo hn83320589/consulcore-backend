@@ -143,7 +143,7 @@ X-Active-Role: <目前作用中的角色>      // 例如 owner / admin / therapi
 - 此狀態下，後端中介層會**攔截除下列以外的所有請求並回 403**（message：`首次登入請先變更密碼後才能使用其他功能`）：
   - `PUT /api/auth/change-password`
   - `GET /api/auth/me`
-  - `POST /api/auth/logout`（若前端有呼叫）
+  （沒有 `/api/auth/logout` 端點：登出是純前端清除狀態）
 - 前端流程：登入 → 若 `mustChangePassword` → 強制導到改密碼頁 → 改成功後**重新登入**（改密碼不會即時換發 token，需重登才拿到 `mustChangePassword=false` 的新 token）。
 
 ```ts

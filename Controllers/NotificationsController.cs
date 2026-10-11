@@ -33,7 +33,8 @@ public class NotificationsController : ControllerBase
     [HttpPost("{id}/mark-read")]
     public async Task<IActionResult> MarkRead(int id)
     {
-        await _service.MarkAsReadAsync(id);
+        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        await _service.MarkAsReadAsync(id, userId);
         return Ok(ApiResponse<object>.Ok(new { }, "已標記已讀"));
     }
 
