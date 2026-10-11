@@ -95,12 +95,8 @@ public class NotificationService
     {
         return await _db.NotificationTemplates
             .OrderBy(t => t.EventType).ThenBy(t => t.Channel)
-            .Select(t => new NotificationTemplateResponseDto
-            {
-                Id = t.Id, EventType = t.EventType, Channel = t.Channel,
-                Subject = t.Subject, BodyTemplate = t.BodyTemplate,
-                IsRequired = t.IsRequired, IsActive = t.IsActive,
-            }).ToListAsync();
+            .Select(t => MapTemplate(t))
+            .ToListAsync();
     }
 
     public async Task<NotificationTemplateResponseDto> CreateTemplateAsync(
@@ -113,12 +109,7 @@ public class NotificationService
         };
         _db.NotificationTemplates.Add(t);
         await _db.SaveChangesAsync();
-        return new NotificationTemplateResponseDto
-        {
-            Id = t.Id, EventType = t.EventType, Channel = t.Channel,
-            Subject = t.Subject, BodyTemplate = t.BodyTemplate,
-            IsRequired = t.IsRequired, IsActive = t.IsActive,
-        };
+        return MapTemplate(t);
     }
 
     public async Task<NotificationTemplateResponseDto> UpdateTemplateAsync(
@@ -131,13 +122,15 @@ public class NotificationService
         if (dto.IsActive.HasValue) t.IsActive = dto.IsActive.Value;
         t.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        return new NotificationTemplateResponseDto
-        {
-            Id = t.Id, EventType = t.EventType, Channel = t.Channel,
-            Subject = t.Subject, BodyTemplate = t.BodyTemplate,
-            IsRequired = t.IsRequired, IsActive = t.IsActive,
-        };
+        return MapTemplate(t);
     }
+
+    private static NotificationTemplateResponseDto MapTemplate(NotificationTemplate t) => new()
+    {
+        Id = t.Id, EventType = t.EventType, Channel = t.Channel,
+        Subject = t.Subject, BodyTemplate = t.BodyTemplate,
+        IsRequired = t.IsRequired, IsActive = t.IsActive,
+    };
 
     public async Task DeleteTemplateAsync(int id)
     {
