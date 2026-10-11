@@ -63,6 +63,9 @@ builder.Entity<ClientProfile>().HasQueryFilter(e => e.OrganizationId == _current
 
 `_currentOrgId` 從 JWT Claims 的 `organizationId` 取得，透過 `IHttpContextAccessor` 注入 AppDbContext。
 
+> ⚠️ `_currentOrgId` 在 **AppDbContext 建構時**就讀取。認證階段（如 JwtBearer `OnTokenValidated`）`HttpContext.User` 尚未設定，
+> 此時若取用請求的 scoped AppDbContext，整個請求的 filter 都會是「機構 = null」而查不到資料；需另開 scope（`CreateScope()`）。
+
 ### 2. 欄位層級加密
 
 ```csharp

@@ -134,6 +134,30 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
         ClockSkew = TimeSpan.Zero
     };
+    options.Events = new JwtBearerEvents
+    {
+        // token 有效期內帳號或機構被停用時立即失效（否則停用後 24 小時內仍可使用）。
+        // 驗證失敗回空內容的 401，前端據此視為登入過期。
+        OnTokenValidated = async context =>
+        {
+            var userIdClaim = context.Principal?.FindFirst("userId")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                context.Fail("token 缺少 userId");
+                return;
+            }
+
+            // 用獨立 scope：AppDbContext 在建構時就從 HttpContext.User 讀機構 id，此時 User 尚未設定；
+            // 若取用請求的 scoped 實例，整個請求的多租戶 filter 都會變成「機構 = null」而查不到任何資料
+            using var scope = context.HttpContext.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var active = await db.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Id == userId && u.IsActive && u.Organization.IsActive);
+            if (!active)
+                context.Fail("帳號或機構已停用");
+        },
+    };
 });
 
 // Authorization Policies
