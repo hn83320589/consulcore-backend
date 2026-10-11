@@ -1,3 +1,4 @@
+using consulcore_backend.Exceptions;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.AppointmentSeries;
 using consulcore_backend.Models;
@@ -60,7 +61,7 @@ public class AppointmentSeriesController : ControllerBase
     {
         // 待續約清單為 staff 聚合視圖，非 staff 身份無權存取
         if (!ActingAsVerifiedNonClient())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取此清單"));
+            throw new ForbiddenException("無權存取此清單");
 
         var series = await _seriesService.GetPendingRenewalAsync();
         return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
@@ -75,7 +76,7 @@ public class AppointmentSeriesController : ControllerBase
         {
             var own = await CurrentClientProfileIdAsync();
             if (own == null || clientProfileId != own)
-                return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的常態預約"));
+                throw new ForbiddenException("無權存取其他個案的常態預約");
         }
 
         var series = await _seriesService.GetByClientAsync(clientProfileId, status);

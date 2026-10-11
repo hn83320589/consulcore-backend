@@ -94,11 +94,6 @@ public class BillingController : ControllerBase
         var csv = await _billingService.ExportPaymentsCsvAsync(
             startDate, endDate, clientProfileId, therapistUserId, status);
 
-        var preamble = System.Text.Encoding.UTF8.GetPreamble();
-        var body = System.Text.Encoding.UTF8.GetBytes(csv);
-        var bytes = new byte[preamble.Length + body.Length];
-        Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
-        Buffer.BlockCopy(body, 0, bytes, preamble.Length, body.Length);
-        return File(bytes, "text/csv; charset=utf-8", "payments.csv");
+        return File(CsvWriter.ToUtf8WithBom(csv), "text/csv; charset=utf-8", "payments.csv");
     }
 }

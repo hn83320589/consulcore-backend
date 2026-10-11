@@ -22,14 +22,11 @@ public class ScheduleSlotsController : ControllerBase
     [HttpGet]
     [Authorize(Policy = Policies.CanViewSchedules)]
     public async Task<IActionResult> GetSlots(
-        [FromQuery] string? startDate,
-        [FromQuery] string? endDate,
+        [FromQuery] DateOnly? startDate,
+        [FromQuery] DateOnly? endDate,
         [FromQuery] int? therapistUserId)
     {
-        DateOnly? start = startDate != null ? DateOnly.Parse(startDate) : null;
-        DateOnly? end = endDate != null ? DateOnly.Parse(endDate) : null;
-
-        var slots = await _scheduleService.GetSlotsAsync(start, end, therapistUserId);
+        var slots = await _scheduleService.GetSlotsAsync(startDate, endDate, therapistUserId);
         return Ok(ApiResponse<List<ScheduleSlotResponseDto>>.Ok(slots));
     }
 
@@ -38,10 +35,7 @@ public class ScheduleSlotsController : ControllerBase
     public async Task<IActionResult> Expand([FromBody] ExpandScheduleDto dto)
     {
         var orgId = User.GetOrganizationId();
-        var startDate = DateOnly.Parse(dto.StartDate);
-        var endDate = DateOnly.Parse(dto.EndDate);
-
-        var result = await _scheduleService.ExpandScheduleAsync(startDate, endDate, orgId);
+        var result = await _scheduleService.ExpandScheduleAsync(dto.StartDate, dto.EndDate, orgId);
         return Ok(ApiResponse<ExpandResultDto>.Ok(result, $"展班完成：新增 {result.CreatedCount} 個時段"));
     }
 

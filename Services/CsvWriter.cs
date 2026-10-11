@@ -16,4 +16,8 @@ public static class CsvWriter
 
     public static string Row(params object?[] fields)
         => string.Join(",", fields.Select(Field));
+
+    // Excel 需要 UTF-8 BOM 才能正確辨識中文
+    public static byte[] ToUtf8WithBom(string csv) =>
+        [.. System.Text.Encoding.UTF8.GetPreamble(), .. System.Text.Encoding.UTF8.GetBytes(csv)];
 }

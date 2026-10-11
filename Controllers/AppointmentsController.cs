@@ -1,3 +1,4 @@
+using consulcore_backend.Exceptions;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Appointment;
 using consulcore_backend.DTOs.ScheduleSlot;
@@ -5,6 +6,7 @@ using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace consulcore_backend.Controllers;
 
@@ -74,15 +76,13 @@ public class AppointmentsController : ControllerBase
     [HttpGet("calendar")]
     [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> CalendarView(
-        [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? therapistUserId)
+        [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate, [FromQuery] int? therapistUserId)
     {
         // 行事曆為 staff 聚合視圖，無法依個案範圍化；非 staff 身份一律拒絕（個案請改用 list）
         if (!ActingAsVerifiedNonClient())
-            return StatusCode(403, ApiResponse<object>.Fail("個案無法存取行事曆檢視"));
+            throw new ForbiddenException("個案無法存取行事曆檢視");
 
-        var start = DateOnly.Parse(startDate);
-        var end = DateOnly.Parse(endDate);
-        var appointments = await _appointmentService.GetByDateRangeAsync(start, end, therapistUserId);
+        var appointments = await _appointmentService.GetByDateRangeAsync(startDate, endDate, therapistUserId);
         return Ok(ApiResponse<List<AppointmentResponseDto>>.Ok(appointments));
     }
 
@@ -106,11 +106,9 @@ public class AppointmentsController : ControllerBase
     [HttpGet("available-slots")]
     [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> AvailableSlots(
-        [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? therapistUserId)
+        [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate, [FromQuery] int? therapistUserId)
     {
-        var start = DateOnly.Parse(startDate);
-        var end = DateOnly.Parse(endDate);
-        var slots = await _appointmentService.GetAvailableSlotsAsync(therapistUserId, start, end);
+        var slots = await _appointmentService.GetAvailableSlotsAsync(therapistUserId, startDate, endDate);
         return Ok(ApiResponse<List<ScheduleSlotResponseDto>>.Ok(slots));
     }
 
@@ -125,7 +123,7 @@ public class AppointmentsController : ControllerBase
         {
             var ownId = await CurrentClientProfileIdAsync();
             if (ownId == null || appointment.ClientProfileId != ownId)
-                return StatusCode(403, ApiResponse<object>.Fail("無權存取此預約"));
+                throw new ForbiddenException("無權存取此預約");
         }
 
         return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment));

@@ -1,21 +1,25 @@
 namespace consulcore_backend.Services;
 
 /// <summary>
-/// 每日背景維護：套餐到期轉 expired、考核可見性排程（開放/收回）。
+/// 每日背景維護：套餐到期轉 expired、考核可見性排程（開放/收回）、常態預約續約提醒。
+/// 每天診所時間 03:00 執行（各任務皆可重複執行，續約提醒已去重）。
 /// 這些是跨機構的系統任務，內部方法以 IgnoreQueryFilters 掃全機構。
 /// </summary>
 public class ScheduledMaintenanceService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ScheduledMaintenanceService> _logger;
-    private static readonly TimeSpan Interval = TimeSpan.FromHours(24);
+    private readonly ClinicClock _clock;
+    private static readonly TimeOnly RunAt = new(3, 0);
 
     public ScheduledMaintenanceService(
         IServiceScopeFactory scopeFactory,
-        ILogger<ScheduledMaintenanceService> logger)
+        ILogger<ScheduledMaintenanceService> logger,
+        ClinicClock clock)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _clock = clock;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -24,21 +28,21 @@ public class ScheduledMaintenanceService : BackgroundService
         {
             try
             {
+                await Task.Delay(_clock.UntilNext(RunAt), stoppingToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+
+            try
+            {
                 await RunOnceAsync(stoppingToken);
             }
             catch (Exception ex)
             {
                 // 背景任務失敗不可讓服務崩潰，記錄後於下一輪重試
                 _logger.LogError(ex, "排程維護任務執行失敗");
-            }
-
-            try
-            {
-                await Task.Delay(Interval, stoppingToken);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
             }
         }
     }

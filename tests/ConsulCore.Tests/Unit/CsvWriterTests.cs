@@ -36,4 +36,14 @@ public class CsvWriterTests
     {
         Assert.Equal("\"a\",\"1200\",\"'=1+1\"", CsvWriter.Row("a", 1200, "=1+1"));
     }
+
+    // R5：收費與稽核匯出原本各寫一份加 BOM 的程式碼；Excel 需要 BOM 才能正確辨識 UTF-8 中文
+    [Fact]
+    public void Utf8WithBom_prefixes_the_byte_order_mark()
+    {
+        var bytes = CsvWriter.ToUtf8WithBom("姓名\n王小明");
+
+        Assert.Equal(new byte[] { 0xEF, 0xBB, 0xBF }, bytes[..3]);
+        Assert.Equal("姓名\n王小明", System.Text.Encoding.UTF8.GetString(bytes[3..]));
+    }
 }

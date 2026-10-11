@@ -1,3 +1,4 @@
+using consulcore_backend.Exceptions;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ClientProfile;
 using consulcore_backend.Models;
@@ -60,7 +61,7 @@ public class ClientProfilesController : ControllerBase
     {
         // therapist 僅能查詢自己的個案清單
         if (!HasFullClientScope() && therapistUserId != CurrentUserId())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取其他心理師的個案"));
+            throw new ForbiddenException("無權存取其他心理師的個案");
 
         var clients = await _clientService.GetByTherapistAsync(therapistUserId);
         return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));

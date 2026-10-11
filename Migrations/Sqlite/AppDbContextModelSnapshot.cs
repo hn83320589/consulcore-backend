@@ -133,6 +133,10 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnType("INTEGER")
                         .HasColumnName("organization_id");
 
+                    b.Property<DateTime?>("RenewalRemindedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("renewal_reminded_at");
+
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("TEXT")
                         .HasColumnName("start_time");

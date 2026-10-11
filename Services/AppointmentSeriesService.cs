@@ -74,6 +74,7 @@ public class AppointmentSeriesService
             throw new BusinessRuleException($"續約後到期日不可超過 {maxExpiry}（3 個月上限）");
 
         series.ExpiresAt = newExpiry;
+        series.RenewalRemindedAt = null; // 續約後重新開始計算，剩餘預約再次不足時可再提醒
         series.Status = SeriesStatus.Active;
         series.UpdatedAt = DateTime.UtcNow;
 
@@ -151,7 +152,7 @@ public class AppointmentSeriesService
             .Include(s => s.ClientProfile)
             .Include(s => s.TherapistUser)
             .Include(s => s.Appointments)
-            .Where(s => s.Status == SeriesStatus.Active)
+            .Where(s => s.Status == SeriesStatus.Active && s.RenewalRemindedAt == null)
             .ToListAsync();
 
         var pending = activeSeries
@@ -166,7 +167,9 @@ public class AppointmentSeriesService
                 ["therapist_name"] = s.TherapistUser?.DisplayName ?? "",
             };
             await _notify.SendAsync(NotificationEventType.SeriesRenewal, s.TherapistUserId, Roles.Therapist, s.OrganizationId, vars);
+            s.RenewalRemindedAt = _clock.UtcNow;
         }
+        await _db.SaveChangesAsync();
 
         return pending.Count;
     }

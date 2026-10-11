@@ -12,4 +12,13 @@ public class ClinicClock(TimeProvider timeProvider, IConfiguration configuration
     public DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
 
     public DateOnly Today => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(UtcNow, _timeZone));
+
+    /// <summary>距離下一次診所當地時間 <paramref name="localTime"/> 還有多久（剛好到點則算到隔天）。</summary>
+    public TimeSpan UntilNext(TimeOnly localTime)
+    {
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(UtcNow, _timeZone);
+        var next = nowLocal.Date + localTime.ToTimeSpan();
+        if (next <= nowLocal) next = next.AddDays(1);
+        return next - nowLocal;
+    }
 }

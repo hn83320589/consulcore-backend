@@ -39,6 +39,10 @@ public class AppointmentSeries
     [Column("expires_at")]
     public DateOnly ExpiresAt { get; set; }
 
+    // 已寄出續約提醒的時間；續約後清空。每個系列只提醒一次，避免每天 / 每次重啟重複寄送
+    [Column("renewal_reminded_at")]
+    public DateTime? RenewalRemindedAt { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
