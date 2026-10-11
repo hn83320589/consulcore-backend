@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace consulcore_backend.Models;
 
@@ -26,10 +27,12 @@ public class Package
     [Column("total_sessions")]
     public int TotalSessions { get; set; }
 
-    [Column("total_amount", TypeName = "decimal(10,2)")]
+    [Column("total_amount")]
+    [Precision(10, 2)]
     public decimal TotalAmount { get; set; }
 
-    [Column("per_session_amount", TypeName = "decimal(10,2)")]
+    [Column("per_session_amount")]
+    [Precision(10, 2)]
     public decimal PerSessionAmount { get; set; }
 
     [Column("valid_days")]

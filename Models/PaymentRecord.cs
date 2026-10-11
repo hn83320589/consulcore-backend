@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace consulcore_backend.Models;
 
@@ -25,10 +26,12 @@ public class PaymentRecord
     [Column("discount_id")]
     public int? DiscountId { get; set; }
 
-    [Column("original_amount", TypeName = "decimal(10,2)")]
+    [Column("original_amount")]
+    [Precision(10, 2)]
     public decimal OriginalAmount { get; set; }
 
-    [Column("final_amount", TypeName = "decimal(10,2)")]
+    [Column("final_amount")]
+    [Precision(10, 2)]
     public decimal FinalAmount { get; set; }
 
     [Required]

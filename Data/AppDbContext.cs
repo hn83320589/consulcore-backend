@@ -66,6 +66,14 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // 帳號 / Email 比對與唯一性不分大小寫。MySQL 預設 collation 即不分大小寫，
+        // SQLite 預設為 binary，需明確指定 NOCASE 才能維持相同行為。
+        if (Database.IsSqlite())
+        {
+            modelBuilder.Entity<User>().Property(u => u.Username).UseCollation("NOCASE");
+            modelBuilder.Entity<User>().Property(u => u.Email).UseCollation("NOCASE");
+        }
+
         // === Unique Constraints ===
         modelBuilder.Entity<User>()
             .HasIndex(u => new { u.OrganizationId, u.Username })
