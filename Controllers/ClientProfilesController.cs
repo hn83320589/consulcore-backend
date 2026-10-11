@@ -111,7 +111,7 @@ public class ClientProfilesController : ControllerBase
     [Authorize(Policy = "CanUpdateClients")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateClientProfileDto dto)
     {
-        var client = await _clientService.UpdateAsync(id, dto);
+        var client = await _clientService.UpdateAsync(id, dto, CurrentUserId(), HasFullClientScope());
         return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已更新"));
     }
 

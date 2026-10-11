@@ -289,6 +289,7 @@
 | 「非建立者」編輯/刪除/鎖定晤談紀錄、備忘、常用語：**401 → 403**；改密碼時目前密碼錯誤：**401 → 400** | **無**：前端 F3（`f099d77`）已先相容，兩者都只顯示訊息、不登出 |
 | 模型驗證失敗（必填、長度等）改回 `ApiResponse`（`message` 為第一個錯誤、`errors` 為全部），原本是 ASP.NET 的 ValidationProblemDetails | **改善**：原本攔截器讀不到 `message` 只顯示「請求無法完成」，現在會顯示具體原因 |
 | 框架 / EF 內部的例外不再以 400 回傳原始訊息，改為 500 +「伺服器發生錯誤」 | **無** |
+| `PUT /api/client-profiles/{id}`：therapist 只能修改自己指派中的個案，否則 **403**；建立 / 指派 / 移轉時指定的心理師須為本機構啟用中的 therapist，否則 **400** | **無**：ClientDetailView 對代診（非指派）心理師本來就唯讀（`canEditClient`） |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
 
 ### 5. ✅ 擁有者保護：新的 403 情境
