@@ -274,6 +274,10 @@ public class BillingService
                 r.OriginalAmount, r.FinalAmount, r.PaymentMethod, r.PaymentType, r.Status, r.PaidAt, r.CreatedAt })
             .ToListAsync();
 
+        // 匯出含個案姓名與金額，須留稽核
+        await _audit.LogAsync("export", "payment_record", 0, $"匯出收費紀錄 CSV（{payments.Count} 筆）",
+            new { startDate, endDate, clientProfileId, therapistUserId, status });
+
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(CsvWriter.Row("ID", "個案", "原始金額", "實收金額", "付款方式", "類型", "狀態", "付款時間", "建立時間"));
         foreach (var p in payments)

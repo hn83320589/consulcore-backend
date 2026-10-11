@@ -12,8 +12,13 @@ namespace consulcore_backend.Services;
 public class AuditLogService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
 
-    public AuditLogService(AppDbContext db) { _db = db; }
+    public AuditLogService(AppDbContext db, IAuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     public async Task<List<AuditLogResponseDto>> GetLogsAsync(
         string? action, string? resourceType, int? userId,
@@ -60,6 +65,10 @@ public class AuditLogService
             .Select(a => new { a.Id, UserName = a.User.DisplayName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.IpAddress, a.CreatedAt })
             .ToListAsync();
 
+        // 匯出內容含使用者與操作細節，匯出行為本身也要留痕（在查詢之後寫入，不會出現在這次匯出裡）
+        await _audit.LogAsync("export", "audit_log", 0, $"匯出稽核紀錄 CSV（{logs.Count} 筆）",
+            new { action, resourceType, startDate, endDate });
+
         var sb = new StringBuilder();
         sb.AppendLine(CsvWriter.Row("ID", "使用者", "操作", "資源類型", "資源ID", "描述", "IP", "時間"));
         foreach (var l in logs)
@@ -84,6 +93,9 @@ public class AuditLogService
         var logs = await query.OrderByDescending(a => a.CreatedAt)
             .Select(a => new { a.Id, UserName = a.User.DisplayName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.CreatedAt })
             .ToListAsync();
+
+        await _audit.LogAsync("export", "audit_log", 0, $"匯出稽核紀錄 PDF（{logs.Count} 筆）",
+            new { action, resourceType, startDate, endDate });
 
         var document = Document.Create(container =>
         {

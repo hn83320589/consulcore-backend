@@ -327,8 +327,8 @@ public class AuthService
                 "appointment.view", "appointment.create", "appointment.update",
                 "schedule.view",
                 "session.view", "session.create", "session.update", "session.lock",
-                "consent.view", "consent.create",
-                "billing.view"
+                // 不含 billing.view：收費 / 報表 / 匯出是全機構資料，心理師預設不可見（決策 D7）
+                "consent.view", "consent.create"
             ],
             ["client"] =
             [
