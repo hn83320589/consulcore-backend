@@ -38,8 +38,8 @@ public class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var userId = User.GetUserId();
+        var orgId = User.GetOrganizationId();
         var activeRole = Request.Headers["X-Active-Role"].FirstOrDefault();
 
         var result = await _authService.GetCurrentUserAsync(userId, orgId, activeRole);
@@ -50,7 +50,7 @@ public class AuthController : ControllerBase
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         await _authService.ChangePasswordAsync(userId, dto);
         return Ok(ApiResponse<object>.Ok(new { }, "密碼已變更"));
     }

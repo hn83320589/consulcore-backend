@@ -25,8 +25,8 @@ public class ViolationRecordsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateViolationRecordDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var record = await _service.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已建立"));
     }

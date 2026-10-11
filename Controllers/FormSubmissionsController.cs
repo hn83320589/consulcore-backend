@@ -23,8 +23,8 @@ public class FormSubmissionsController : ControllerBase
     [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Submit([FromBody] SubmitFormDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var submission = await _formService.SubmitFormAsync(dto, orgId, userId);
         return Ok(ApiResponse<FormSubmissionResponseDto>.Ok(submission, "表單已提交"));
     }

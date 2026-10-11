@@ -37,7 +37,7 @@ public class ScheduleSlotsController : ControllerBase
     [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> Expand([FromBody] ExpandScheduleDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var startDate = DateOnly.Parse(dto.StartDate);
         var endDate = DateOnly.Parse(dto.EndDate);
 
@@ -49,7 +49,7 @@ public class ScheduleSlotsController : ControllerBase
     [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> ManualExpand([FromBody] ManualExpandDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var result = await _scheduleService.ManualExpandAsync(dto.Year, dto.Month, orgId);
         return Ok(ApiResponse<ExpandResultDto>.Ok(result, $"展班完成：新增 {result.CreatedCount} 個時段"));
     }

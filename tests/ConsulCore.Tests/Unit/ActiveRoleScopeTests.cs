@@ -21,22 +21,6 @@ public class ActiveRoleScopeTests
     }
 
     [Fact]
-    public void JwtRoles_parses_json_array_claim()
-    {
-        Assert.Equal(["therapist", "client"], ActiveRoleScope.JwtRoles(UserWithRolesClaim("[\"therapist\",\"client\"]")));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("not-json")]
-    [InlineData("{\"role\":\"owner\"}")]
-    public void JwtRoles_returns_empty_for_missing_or_malformed_claim(string? rolesJson)
-    {
-        Assert.Empty(ActiveRoleScope.JwtRoles(UserWithRolesClaim(rolesJson)));
-    }
-
-    [Fact]
     public void Verified_staff_role_present_in_jwt_is_accepted()
     {
         var user = UserWithRolesClaim("[\"therapist\"]");

@@ -140,7 +140,7 @@ builder.Services.AddAuthentication(options =>
         // 驗證失敗回空內容的 401，前端據此視為登入過期。
         OnTokenValidated = async context =>
         {
-            var userIdClaim = context.Principal?.FindFirst("userId")?.Value;
+            var userIdClaim = context.Principal?.FindFirst(JwtClaims.UserId)?.Value;
             if (!int.TryParse(userIdClaim, out var userId))
             {
                 context.Fail("token 缺少 userId");

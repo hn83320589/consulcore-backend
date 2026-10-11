@@ -1,4 +1,5 @@
 using System.Reflection;
+using consulcore_backend.Authorization;
 using consulcore_backend.Data.Encryption;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ public class AppDbContext : DbContext
         _httpContextAccessor = httpContextAccessor;
         _encryptionService = encryptionService;
 
-        var orgClaim = _httpContextAccessor.HttpContext?.User?.FindFirst("organizationId");
+        var orgClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(JwtClaims.OrganizationId);
         _currentOrgId = orgClaim != null ? int.Parse(orgClaim.Value) : null;
     }
 

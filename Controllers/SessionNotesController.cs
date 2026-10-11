@@ -23,8 +23,8 @@ public class SessionNotesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateSessions)]
     public async Task<IActionResult> Create([FromBody] CreateSessionNoteDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var note = await _sessionNoteService.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<SessionNoteResponseDto>.Ok(note, "晤談紀錄已建立"));
     }
@@ -33,7 +33,7 @@ public class SessionNotesController : ControllerBase
     [Authorize(Policy = Policies.CanUpdateSessions)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSessionNoteDto dto)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var note = await _sessionNoteService.UpdateAsync(id, dto, userId);
         return Ok(ApiResponse<SessionNoteResponseDto>.Ok(note, "晤談紀錄已更新"));
     }
@@ -42,7 +42,7 @@ public class SessionNotesController : ControllerBase
     [Authorize(Policy = Policies.CanUpdateSessions)]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         await _sessionNoteService.DeleteAsync(id, userId);
         return Ok(ApiResponse<object>.Ok(new { }, "晤談紀錄已刪除"));
     }
@@ -51,7 +51,7 @@ public class SessionNotesController : ControllerBase
     [Authorize(Policy = Policies.CanLockSessions)]
     public async Task<IActionResult> Lock(int id)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var note = await _sessionNoteService.LockAsync(id, userId);
         return Ok(ApiResponse<SessionNoteResponseDto>.Ok(note, "晤談紀錄已鎖定"));
     }
@@ -60,7 +60,7 @@ public class SessionNotesController : ControllerBase
     [Authorize(Policy = Policies.CanLockSessions)]
     public async Task<IActionResult> Unlock(int id)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var note = await _sessionNoteService.UnlockAsync(id, userId);
         return Ok(ApiResponse<SessionNoteResponseDto>.Ok(note, "晤談紀錄已解鎖"));
     }

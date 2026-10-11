@@ -26,7 +26,7 @@ public class DiscountsController : ControllerBase
     [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreateDiscountDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var discount = await _service.CreateAsync(dto, orgId);
         return Ok(ApiResponse<DiscountResponseDto>.Ok(discount, "折扣已建立"));
     }
@@ -51,8 +51,8 @@ public class DiscountsController : ControllerBase
     [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Assign([FromBody] AssignDiscountDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         await _service.AssignDiscountAsync(dto, orgId, userId);
         return Ok(ApiResponse<object>.Ok(new { }, "折扣已指派"));
     }

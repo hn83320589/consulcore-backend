@@ -43,7 +43,7 @@ public class RoomsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRoomDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var room = await _roomService.CreateAsync(dto, orgId);
         return Ok(ApiResponse<RoomResponseDto>.Ok(room, "診間已建立"));
     }
@@ -65,7 +65,7 @@ public class RoomsController : ControllerBase
     [HttpPost("{id}/assign-therapist")]
     public async Task<IActionResult> AssignTherapist(int id, [FromBody] AssignTherapistToRoomDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var room = await _roomService.AssignTherapistAsync(id, dto, orgId);
         return Ok(ApiResponse<RoomResponseDto>.Ok(room, "心理師已指派至診間"));
     }

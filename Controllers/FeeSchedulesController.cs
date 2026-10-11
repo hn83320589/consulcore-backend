@@ -26,7 +26,7 @@ public class FeeSchedulesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreateFeeScheduleDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var fee = await _service.CreateAsync(dto, orgId);
         return Ok(ApiResponse<FeeScheduleResponseDto>.Ok(fee, "費率已建立"));
     }

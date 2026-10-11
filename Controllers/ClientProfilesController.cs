@@ -19,27 +19,13 @@ public class ClientProfilesController : ControllerBase
         _clientService = clientService;
     }
 
-    private int CurrentUserId() => int.Parse(User.FindFirst("userId")!.Value);
+    private int CurrentUserId() => User.GetUserId();
 
     // owner/admin 可存取全機構個案；其餘角色（therapist）僅限自己被指派的個案。
     // active role 必須是使用者 JWT 內真的擁有的角色，避免 X-Active-Role header 偽造提權。
-    private bool HasFullClientScope()
-    {
-        var role = Request.Headers["X-Active-Role"].FirstOrDefault();
-        if (role is not (Roles.Owner or Roles.Admin)) return false;
-
-        var rolesClaim = User.FindFirst("roles")?.Value;
-        if (string.IsNullOrEmpty(rolesClaim)) return false;
-        try
-        {
-            var userRoles = System.Text.Json.JsonSerializer.Deserialize<List<string>>(rolesClaim) ?? [];
-            return userRoles.Contains(role);
-        }
-        catch (System.Text.Json.JsonException)
-        {
-            return false;
-        }
-    }
+    private bool HasFullClientScope() =>
+        ActiveRoleScope.ActingAsVerified(Request, User, Roles.Owner)
+        || ActiveRoleScope.ActingAsVerified(Request, User, Roles.Admin);
 
     [HttpGet]
     [Authorize(Policy = Policies.CanViewClients)]
@@ -84,7 +70,7 @@ public class ClientProfilesController : ControllerBase
     [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetMyClients()
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var clients = await _clientService.GetByTherapistAsync(userId);
         return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));
     }
@@ -103,7 +89,7 @@ public class ClientProfilesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateClients)]
     public async Task<IActionResult> Create([FromBody] CreateClientProfileDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var client = await _clientService.CreateAsync(dto, orgId);
         return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已建立"));
     }
@@ -128,7 +114,7 @@ public class ClientProfilesController : ControllerBase
     [Authorize(Policy = Policies.CanManageClients)]
     public async Task<IActionResult> AssignTherapist(int id, [FromBody] AssignTherapistDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var client = await _clientService.AssignTherapistAsync(id, dto, orgId);
         return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "心理師已指派"));
     }
@@ -138,7 +124,7 @@ public class ClientProfilesController : ControllerBase
     public async Task<IActionResult> TransferTherapist(
         int id, int currentTherapistUserId, [FromBody] TransferTherapistDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var client = await _clientService.TransferTherapistAsync(id, currentTherapistUserId, dto, orgId);
         return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已移轉"));
     }

@@ -38,8 +38,8 @@ public class FormTemplatesController : ControllerBase
     [Authorize(Policy = Policies.CanManageOrgSettings)]
     public async Task<IActionResult> Create([FromBody] CreateFormTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var template = await _formService.CreateTemplateAsync(dto, orgId, userId);
         return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已建立"));
     }
@@ -64,8 +64,8 @@ public class FormTemplatesController : ControllerBase
     [Authorize(Policy = Policies.CanManageOrgSettings)]
     public async Task<IActionResult> Clone(int id)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var template = await _formService.CloneTemplateAsync(id, orgId, userId);
         return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已複製"));
     }

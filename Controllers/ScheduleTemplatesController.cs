@@ -39,7 +39,7 @@ public class ScheduleTemplatesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> Create([FromBody] CreateScheduleTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var template = await _scheduleService.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已建立"));
     }

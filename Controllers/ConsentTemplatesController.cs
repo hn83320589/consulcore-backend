@@ -39,7 +39,7 @@ public class ConsentTemplatesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateConsents)]
     public async Task<IActionResult> Create([FromBody] CreateConsentTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var template = await _consentService.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已建立"));
     }

@@ -38,7 +38,7 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var user = await _userService.CreateAsync(dto, orgId, ActingAsOwner);
         return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已建立"));
     }

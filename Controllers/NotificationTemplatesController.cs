@@ -25,7 +25,7 @@ public class NotificationTemplatesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateNotificationTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var t = await _service.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已建立"));
     }

@@ -26,7 +26,7 @@ public class PackagesController : ControllerBase
     [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreatePackageDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var pkg = await _service.CreateAsync(dto, orgId);
         return Ok(ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已建立"));
     }

@@ -272,11 +272,11 @@ public class AuthService
 
         var claims = new[]
         {
-            new Claim("userId", user.Id.ToString()),
-            new Claim("organizationId", user.OrganizationId.ToString()),
-            new Claim("username", user.Username),
-            new Claim("roles", JsonSerializer.Serialize(roles)),
-            new Claim("mustChangePassword", mustChangePassword ? "true" : "false")
+            new Claim(JwtClaims.UserId, user.Id.ToString()),
+            new Claim(JwtClaims.OrganizationId, user.OrganizationId.ToString()),
+            new Claim(JwtClaims.Username, user.Username),
+            new Claim(JwtClaims.Roles, JsonSerializer.Serialize(roles)),
+            new Claim(JwtClaims.MustChangePassword, mustChangePassword ? "true" : "false")
         };
 
         var token = new JwtSecurityToken(

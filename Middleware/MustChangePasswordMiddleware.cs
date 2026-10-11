@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using consulcore_backend.Authorization;
 using consulcore_backend.Models;
 
 namespace consulcore_backend.Middleware;
@@ -28,7 +29,7 @@ public class MustChangePasswordMiddleware
     {
         var user = context.User;
         if (user.Identity?.IsAuthenticated == true
-            && user.FindFirst("mustChangePassword")?.Value == "true")
+            && user.FindFirst(JwtClaims.MustChangePassword)?.Value == "true")
         {
             var path = context.Request.Path.Value ?? string.Empty;
             var isAllowed = AllowedPaths.Any(p =>

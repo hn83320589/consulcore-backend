@@ -19,7 +19,7 @@ public class BillingController : ControllerBase
     [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> OnCompleted(int appointmentId)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var record = await _billingService.OnAppointmentCompletedAsync(appointmentId, userId);
         if (record == null)
             return Ok(ApiResponse<object>.Ok(new { }, "無適用費率，未產生收費記錄"));
@@ -30,8 +30,8 @@ public class BillingController : ControllerBase
     [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> PurchasePackage([FromBody] PurchasePackageDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var cp = await _billingService.PurchasePackageAsync(dto, orgId, userId);
         return Ok(ApiResponse<ClientPackageResponseDto>.Ok(cp, "套餐已購買"));
     }

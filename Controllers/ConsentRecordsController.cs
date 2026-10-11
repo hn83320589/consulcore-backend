@@ -24,13 +24,13 @@ public class ConsentRecordsController : ControllerBase
     // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
     private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private Task<int?> CurrentClientProfileIdAsync()
-        => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
+        => _clientService.GetClientProfileIdByUserAsync(User.GetUserId());
 
     [HttpPost("sign")]
     [Authorize(Policy = Policies.CanCreateConsents)]
     public async Task<IActionResult> Sign([FromBody] SignConsentDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var record = await _consentService.SignConsentAsync(dto, orgId);
         return Ok(ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已簽署"));
     }

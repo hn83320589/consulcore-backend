@@ -24,7 +24,7 @@ public class AppointmentsController : ControllerBase
 
     // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
     private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
-    private int CurrentUserId() => int.Parse(User.FindFirst("userId")!.Value);
+    private int CurrentUserId() => User.GetUserId();
 
     // 使用者自己的個案檔 id；取不到（帳號無對應個案）回 null
     private Task<int?> CurrentClientProfileIdAsync() => _clientService.GetClientProfileIdByUserAsync(CurrentUserId());
@@ -33,8 +33,8 @@ public class AppointmentsController : ControllerBase
     [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var appointment = await _appointmentService.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已建立"));
     }

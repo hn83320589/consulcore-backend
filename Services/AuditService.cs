@@ -1,4 +1,5 @@
 using System.Text.Json;
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.Models;
 
@@ -26,9 +27,9 @@ public class AuditService : IAuditService
         var httpContext = _httpContextAccessor.HttpContext;
 
         var orgId = organizationId
-            ?? int.Parse(httpContext?.User?.FindFirst("organizationId")?.Value ?? "0");
+            ?? int.Parse(httpContext?.User?.FindFirst(JwtClaims.OrganizationId)?.Value ?? "0");
         var uid = userId
-            ?? int.Parse(httpContext?.User?.FindFirst("userId")?.Value ?? "0");
+            ?? int.Parse(httpContext?.User?.FindFirst(JwtClaims.UserId)?.Value ?? "0");
 
         if (orgId == 0 || uid == 0)
         {
