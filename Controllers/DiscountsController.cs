@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Discount;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/discounts")]
-[Authorize(Policy = "CanViewBilling")]
+[Authorize(Policy = Policies.CanViewBilling)]
 public class DiscountsController : ControllerBase
 {
     private readonly DiscountService _service;
@@ -22,16 +23,16 @@ public class DiscountsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateBilling")]
+    [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreateDiscountDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var discount = await _service.CreateAsync(dto, orgId);
         return Ok(ApiResponse<DiscountResponseDto>.Ok(discount, "折扣已建立"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDiscountDto dto)
     {
         var discount = await _service.UpdateAsync(id, dto);
@@ -39,7 +40,7 @@ public class DiscountsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Delete(int id)
     {
         await _service.DeleteAsync(id);
@@ -47,17 +48,17 @@ public class DiscountsController : ControllerBase
     }
 
     [HttpPost("assign")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Assign([FromBody] AssignDiscountDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         await _service.AssignDiscountAsync(dto, orgId, userId);
         return Ok(ApiResponse<object>.Ok(new { }, "折扣已指派"));
     }
 
     [HttpDelete("{discountId}/client/{clientProfileId}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Remove(int discountId, int clientProfileId)
     {
         await _service.RemoveDiscountAsync(clientProfileId, discountId);

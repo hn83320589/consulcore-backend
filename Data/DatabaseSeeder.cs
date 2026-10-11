@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -5,48 +6,54 @@ namespace consulcore_backend.Data;
 
 public static class DatabaseSeeder
 {
+    /// <summary>
+    /// 依權限碼補上缺少的權限（可重複執行）：既有資料不修改、不刪除，
+    /// 讓之後新增的權限碼也能寫進既有資料庫。各機構角色的權限不在此調整（owner 可能已自訂）。
+    /// </summary>
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (await db.Permissions.AnyAsync())
-            return;
-
         var permissions = new List<Permission>
         {
-            new() { Code = "client.view", Name = "檢視個案", Description = "檢視個案資料" },
-            new() { Code = "client.create", Name = "建立個案", Description = "建立新個案" },
-            new() { Code = "client.update", Name = "編輯個案", Description = "編輯個案資料" },
-            new() { Code = "client.delete", Name = "刪除個案", Description = "刪除個案資料" },
-            new() { Code = "client.manage", Name = "管理個案", Description = "管理個案指派與移轉" },
-            new() { Code = "appointment.view", Name = "檢視預約", Description = "檢視預約紀錄" },
-            new() { Code = "appointment.create", Name = "建立預約", Description = "建立新預約" },
-            new() { Code = "appointment.update", Name = "編輯預約", Description = "編輯預約資料" },
-            new() { Code = "appointment.delete", Name = "刪除預約", Description = "刪除預約紀錄" },
-            new() { Code = "schedule.view", Name = "檢視排班", Description = "檢視排班資料" },
-            new() { Code = "schedule.create", Name = "建立排班", Description = "建立排班模板" },
-            new() { Code = "schedule.update", Name = "編輯排班", Description = "編輯排班資料" },
-            new() { Code = "schedule.delete", Name = "刪除排班", Description = "刪除排班模板" },
-            new() { Code = "session.view", Name = "檢視晤談", Description = "檢視晤談紀錄" },
-            new() { Code = "session.create", Name = "建立晤談", Description = "建立晤談紀錄" },
-            new() { Code = "session.update", Name = "編輯晤談", Description = "編輯晤談紀錄" },
-            new() { Code = "session.lock", Name = "鎖定晤談", Description = "鎖定/解鎖晤談紀錄" },
-            new() { Code = "consent.view", Name = "檢視同意書", Description = "檢視同意書" },
-            new() { Code = "consent.create", Name = "建立同意書", Description = "建立同意書模板" },
-            new() { Code = "consent.update", Name = "編輯同意書", Description = "編輯同意書模板" },
-            new() { Code = "consent.void", Name = "作廢同意書", Description = "作廢已簽署的同意書" },
-            new() { Code = "billing.view", Name = "檢視收費", Description = "檢視收費紀錄" },
-            new() { Code = "billing.create", Name = "建立收費", Description = "建立收費紀錄" },
-            new() { Code = "billing.update", Name = "編輯收費", Description = "編輯收費紀錄" },
-            new() { Code = "billing.refund", Name = "退費", Description = "處理退費" },
-            new() { Code = "notification.manage", Name = "管理通知", Description = "管理通知模板與設定" },
-            new() { Code = "staff.manage", Name = "管理人員", Description = "管理機構內人員帳號" },
-            new() { Code = "room.manage", Name = "管理診間", Description = "管理診間設定" },
-            new() { Code = "audit.view", Name = "檢視稽核", Description = "檢視稽核紀錄" },
-            new() { Code = "performance.view", Name = "檢視考核", Description = "檢視考核紀錄" },
-            new() { Code = "performance.manage", Name = "管理考核", Description = "管理考核與違規紀錄" },
-            new() { Code = "org.settings", Name = "機構設定", Description = "管理機構設定" },
+            new() { Code = Permissions.ClientView, Name = "檢視個案", Description = "檢視個案資料" },
+            new() { Code = Permissions.ClientCreate, Name = "建立個案", Description = "建立新個案" },
+            new() { Code = Permissions.ClientUpdate, Name = "編輯個案", Description = "編輯個案資料" },
+            new() { Code = Permissions.ClientDelete, Name = "刪除個案", Description = "刪除個案資料" },
+            new() { Code = Permissions.ClientManage, Name = "管理個案", Description = "管理個案指派與移轉" },
+            new() { Code = Permissions.AppointmentView, Name = "檢視預約", Description = "檢視預約紀錄" },
+            new() { Code = Permissions.AppointmentCreate, Name = "建立預約", Description = "建立新預約" },
+            new() { Code = Permissions.AppointmentUpdate, Name = "編輯預約", Description = "編輯預約資料" },
+            new() { Code = Permissions.AppointmentDelete, Name = "刪除預約", Description = "刪除預約紀錄" },
+            new() { Code = Permissions.ScheduleView, Name = "檢視排班", Description = "檢視排班資料" },
+            new() { Code = Permissions.ScheduleCreate, Name = "建立排班", Description = "建立排班模板" },
+            new() { Code = Permissions.ScheduleUpdate, Name = "編輯排班", Description = "編輯排班資料" },
+            new() { Code = Permissions.ScheduleDelete, Name = "刪除排班", Description = "刪除排班模板" },
+            new() { Code = Permissions.SessionView, Name = "檢視晤談", Description = "檢視晤談紀錄" },
+            new() { Code = Permissions.SessionCreate, Name = "建立晤談", Description = "建立晤談紀錄" },
+            new() { Code = Permissions.SessionUpdate, Name = "編輯晤談", Description = "編輯晤談紀錄" },
+            new() { Code = Permissions.SessionLock, Name = "鎖定晤談", Description = "鎖定/解鎖晤談紀錄" },
+            new() { Code = Permissions.ConsentView, Name = "檢視同意書", Description = "檢視同意書" },
+            new() { Code = Permissions.ConsentCreate, Name = "建立同意書", Description = "建立同意書模板" },
+            new() { Code = Permissions.ConsentUpdate, Name = "編輯同意書", Description = "編輯同意書模板" },
+            new() { Code = Permissions.ConsentVoid, Name = "作廢同意書", Description = "作廢已簽署的同意書" },
+            new() { Code = Permissions.BillingView, Name = "檢視收費", Description = "檢視收費紀錄" },
+            new() { Code = Permissions.BillingCreate, Name = "建立收費", Description = "建立收費紀錄" },
+            new() { Code = Permissions.BillingUpdate, Name = "編輯收費", Description = "編輯收費紀錄" },
+            new() { Code = Permissions.BillingRefund, Name = "退費", Description = "處理退費" },
+            new() { Code = Permissions.NotificationManage, Name = "管理通知", Description = "管理通知模板與設定" },
+            new() { Code = Permissions.StaffManage, Name = "管理人員", Description = "管理機構內人員帳號" },
+            new() { Code = Permissions.RoomManage, Name = "管理診間", Description = "管理診間設定" },
+            new() { Code = Permissions.AuditView, Name = "檢視稽核", Description = "檢視稽核紀錄" },
+            new() { Code = Permissions.PerformanceView, Name = "檢視考核", Description = "檢視考核紀錄" },
+            new() { Code = Permissions.PerformanceManage, Name = "管理考核", Description = "管理考核與違規紀錄" },
+            new() { Code = Permissions.OrgSettings, Name = "機構設定", Description = "管理機構設定" },
         };
 
-        db.Permissions.AddRange(permissions);
+        var existing = (await db.Permissions.Select(p => p.Code).ToListAsync()).ToHashSet();
+        var missing = permissions.Where(p => !existing.Contains(p.Code)).ToList();
+        if (missing.Count == 0)
+            return;
+
+        db.Permissions.AddRange(missing);
         await db.SaveChangesAsync();
     }
 

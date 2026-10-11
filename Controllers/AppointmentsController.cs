@@ -24,23 +24,23 @@ public class AppointmentsController : ControllerBase
 
     // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
     private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
-    private int CurrentUserId() => int.Parse(User.FindFirst("userId")!.Value);
+    private int CurrentUserId() => User.GetUserId();
 
     // 使用者自己的個案檔 id；取不到（帳號無對應個案）回 null
     private Task<int?> CurrentClientProfileIdAsync() => _clientService.GetClientProfileIdByUserAsync(CurrentUserId());
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateAppointments")]
+    [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var appointment = await _appointmentService.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已建立"));
     }
 
     [HttpPost("{id}/complete")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> Complete(int id)
     {
         var appointment = await _appointmentService.CompleteAsync(id);
@@ -48,7 +48,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost("{id}/cancel")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> Cancel(int id, [FromBody] AppointmentNoteDto? dto)
     {
         var appointment = await _appointmentService.CancelAsync(id, dto);
@@ -56,7 +56,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost("{id}/no-show")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> MarkNoShow(int id)
     {
         var appointment = await _appointmentService.MarkNoShowAsync(id);
@@ -64,7 +64,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost("{id}/reschedule")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> Reschedule(int id, [FromBody] RescheduleDto dto)
     {
         var appointment = await _appointmentService.RescheduleAsync(id, dto);
@@ -72,7 +72,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("calendar")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> CalendarView(
         [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? therapistUserId)
     {
@@ -87,7 +87,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("list")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> ListView(
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId, [FromQuery] string? status)
     {
@@ -104,7 +104,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("available-slots")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> AvailableSlots(
         [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] int? therapistUserId)
     {
@@ -115,7 +115,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> GetById(int id)
     {
         var appointment = await _appointmentService.GetByIdAsync(id);

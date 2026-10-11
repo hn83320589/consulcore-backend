@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.AuditLog;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/audit-logs")]
-[Authorize(Policy = "CanViewAudit")]
+[Authorize(Policy = Policies.CanViewAudit)]
 public class AuditLogsController : ControllerBase
 {
     private readonly AuditLogService _service;

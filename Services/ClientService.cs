@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ClientProfile;
 using consulcore_backend.Exceptions;
@@ -80,7 +81,7 @@ public class ClientService
     private async Task EnsureTherapistOfOrganizationAsync(int userId)
     {
         var valid = await _db.Users.AnyAsync(u => u.Id == userId && u.IsActive
-            && u.UserRoles.Any(ur => ur.Role.Name == "therapist"));
+            && u.UserRoles.Any(ur => ur.Role.Name == Roles.Therapist));
         if (!valid)
             throw new BusinessRuleException("指定的心理師不存在，或不是本機構的心理師");
     }
@@ -141,7 +142,7 @@ public class ClientService
             await _db.SaveChangesAsync();
 
             // 指派 client 角色
-            var clientRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == "client")
+            var clientRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == Roles.Client)
                 ?? throw new BusinessRuleException("找不到 client 角色");
             _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = clientRole.Id });
 
@@ -171,7 +172,7 @@ public class ClientService
         if (client.UserId.HasValue)
         {
             var vars = new Dictionary<string, string> { ["client_name"] = dto.Name };
-            await _notify.SendAsync(NotificationEventType.AccountCreated, client.UserId.Value, "client", orgId, vars);
+            await _notify.SendAsync(NotificationEventType.AccountCreated, client.UserId.Value, Roles.Client, orgId, vars);
         }
 
         var created = await GetByIdAsync(client.Id);

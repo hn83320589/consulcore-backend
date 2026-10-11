@@ -24,19 +24,19 @@ public class ConsentRecordsController : ControllerBase
     // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
     private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private Task<int?> CurrentClientProfileIdAsync()
-        => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
+        => _clientService.GetClientProfileIdByUserAsync(User.GetUserId());
 
     [HttpPost("sign")]
-    [Authorize(Policy = "CanCreateConsents")]
+    [Authorize(Policy = Policies.CanCreateConsents)]
     public async Task<IActionResult> Sign([FromBody] SignConsentDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var record = await _consentService.SignConsentAsync(dto, orgId);
         return Ok(ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已簽署"));
     }
 
     [HttpPost("{id}/void")]
-    [Authorize(Policy = "CanVoidConsents")]
+    [Authorize(Policy = Policies.CanVoidConsents)]
     public async Task<IActionResult> Void(int id, [FromBody] VoidConsentDto dto)
     {
         var record = await _consentService.VoidConsentAsync(id, dto);
@@ -44,7 +44,7 @@ public class ConsentRecordsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "CanViewConsents")]
+    [Authorize(Policy = Policies.CanViewConsents)]
     public async Task<IActionResult> GetAll(
         [FromQuery] int? clientProfileId, [FromQuery] string? status, [FromQuery] string? triggerEvent)
     {
@@ -60,7 +60,7 @@ public class ConsentRecordsController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewConsents")]
+    [Authorize(Policy = Policies.CanViewConsents)]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
         // 非 staff 身份只能查自己的簽署紀錄（IDOR 防護）
@@ -76,7 +76,7 @@ public class ConsentRecordsController : ControllerBase
     }
 
     [HttpGet("by-trigger-event/{triggerEvent}")]
-    [Authorize(Policy = "CanViewConsents")]
+    [Authorize(Policy = Policies.CanViewConsents)]
     public async Task<IActionResult> GetByTriggerEvent(string triggerEvent)
     {
         // 依觸發事件跨個案瀏覽為 staff 視圖，非 staff 身份無權存取

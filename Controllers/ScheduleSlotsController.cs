@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ScheduleSlot;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,7 +20,7 @@ public class ScheduleSlotsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "CanViewSchedules")]
+    [Authorize(Policy = Policies.CanViewSchedules)]
     public async Task<IActionResult> GetSlots(
         [FromQuery] string? startDate,
         [FromQuery] string? endDate,
@@ -33,10 +34,10 @@ public class ScheduleSlotsController : ControllerBase
     }
 
     [HttpPost("expand")]
-    [Authorize(Policy = "CanCreateSchedules")]
+    [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> Expand([FromBody] ExpandScheduleDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var startDate = DateOnly.Parse(dto.StartDate);
         var endDate = DateOnly.Parse(dto.EndDate);
 
@@ -45,16 +46,16 @@ public class ScheduleSlotsController : ControllerBase
     }
 
     [HttpPost("manual-expand")]
-    [Authorize(Policy = "CanCreateSchedules")]
+    [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> ManualExpand([FromBody] ManualExpandDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var result = await _scheduleService.ManualExpandAsync(dto.Year, dto.Month, orgId);
         return Ok(ApiResponse<ExpandResultDto>.Ok(result, $"展班完成：新增 {result.CreatedCount} 個時段"));
     }
 
     [HttpPost("{id}/block")]
-    [Authorize(Policy = "CanUpdateSchedules")]
+    [Authorize(Policy = Policies.CanUpdateSchedules)]
     public async Task<IActionResult> Block(int id, [FromBody] BlockSlotDto dto)
     {
         var slot = await _scheduleService.BlockSlotAsync(id, dto);
@@ -62,7 +63,7 @@ public class ScheduleSlotsController : ControllerBase
     }
 
     [HttpPost("{id}/unblock")]
-    [Authorize(Policy = "CanUpdateSchedules")]
+    [Authorize(Policy = Policies.CanUpdateSchedules)]
     public async Task<IActionResult> Unblock(int id)
     {
         var slot = await _scheduleService.UnblockSlotAsync(id);

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ScheduleTemplate;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,7 +20,7 @@ public class ScheduleTemplatesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "CanViewSchedules")]
+    [Authorize(Policy = Policies.CanViewSchedules)]
     public async Task<IActionResult> GetAll()
     {
         var templates = await _scheduleService.GetAllTemplatesAsync();
@@ -27,7 +28,7 @@ public class ScheduleTemplatesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "CanViewSchedules")]
+    [Authorize(Policy = Policies.CanViewSchedules)]
     public async Task<IActionResult> GetById(int id)
     {
         var template = await _scheduleService.GetTemplateByIdAsync(id);
@@ -35,16 +36,16 @@ public class ScheduleTemplatesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateSchedules")]
+    [Authorize(Policy = Policies.CanCreateSchedules)]
     public async Task<IActionResult> Create([FromBody] CreateScheduleTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var template = await _scheduleService.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已建立"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateSchedules")]
+    [Authorize(Policy = Policies.CanUpdateSchedules)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateScheduleTemplateDto dto)
     {
         var template = await _scheduleService.UpdateTemplateAsync(id, dto);
@@ -52,7 +53,7 @@ public class ScheduleTemplatesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanDeleteSchedules")]
+    [Authorize(Policy = Policies.CanDeleteSchedules)]
     public async Task<IActionResult> Delete(int id)
     {
         await _scheduleService.DeleteTemplateAsync(id);

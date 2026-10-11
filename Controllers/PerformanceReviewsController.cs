@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.PerformanceReview;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -15,7 +16,7 @@ public class PerformanceReviewsController : ControllerBase
     public PerformanceReviewsController(PerformanceService service) { _service = service; }
 
     [HttpGet]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> GetAll()
     {
         var reviews = await _service.GetAllReviewsAsync();
@@ -23,7 +24,7 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpGet("by-therapist/{therapistUserId}")]
-    [Authorize(Policy = "CanViewPerformance")]
+    [Authorize(Policy = Policies.CanViewPerformance)]
     public async Task<IActionResult> GetByTherapist(int therapistUserId)
     {
         var reviews = await _service.GetByTherapistAsync(therapistUserId);
@@ -31,17 +32,17 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> Create([FromBody] CreatePerformanceReviewDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var review = await _service.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<PerformanceReviewResponseDto>.Ok(review, "考核已建立"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePerformanceReviewDto dto)
     {
         var review = await _service.UpdateAsync(id, dto);
@@ -49,7 +50,7 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> Delete(int id)
     {
         await _service.DeleteAsync(id);
@@ -57,16 +58,16 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpPut("{id}/visibility")]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> SetVisibility(int id, [FromBody] SetVisibilityDto dto)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var review = await _service.SetVisibilityAsync(id, dto, userId);
         return Ok(ApiResponse<PerformanceReviewResponseDto>.Ok(review, "可見性已設定"));
     }
 
     [HttpGet("metrics/{therapistUserId}")]
-    [Authorize(Policy = "CanViewPerformance")]
+    [Authorize(Policy = Policies.CanViewPerformance)]
     public async Task<IActionResult> GetMetrics(int therapistUserId,
         [FromQuery] string startDate, [FromQuery] string endDate)
     {
@@ -76,7 +77,7 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpGet("metrics/{therapistUserId}/trend")]
-    [Authorize(Policy = "CanViewPerformance")]
+    [Authorize(Policy = Policies.CanViewPerformance)]
     public async Task<IActionResult> GetMetricsTrend(int therapistUserId,
         [FromQuery] string metric, [FromQuery] string startDate, [FromQuery] string endDate,
         [FromQuery] string interval = "month")
@@ -87,7 +88,7 @@ public class PerformanceReviewsController : ControllerBase
     }
 
     [HttpGet("metrics-comparison")]
-    [Authorize(Policy = "CanManagePerformance")]
+    [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> GetComparison(
         [FromQuery] string startDate, [FromQuery] string endDate)
     {

@@ -9,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Policy = "CanManageStaff")]
+[Authorize(Policy = Policies.CanManageStaff)]
 public class UsersController : ControllerBase
 {
     private readonly UserService _userService;
@@ -19,7 +19,7 @@ public class UsersController : ControllerBase
         _userService = userService;
     }
 
-    private bool ActingAsOwner => ActiveRoleScope.ActingAsVerified(Request, User, "owner");
+    private bool ActingAsOwner => ActiveRoleScope.ActingAsVerified(Request, User, Roles.Owner);
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -38,7 +38,7 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var user = await _userService.CreateAsync(dto, orgId, ActingAsOwner);
         return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已建立"));
     }

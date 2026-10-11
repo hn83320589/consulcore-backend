@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ViolationRecord;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/violation-records")]
-[Authorize(Policy = "CanManagePerformance")]
+[Authorize(Policy = Policies.CanManagePerformance)]
 public class ViolationRecordsController : ControllerBase
 {
     private readonly ViolationService _service;
@@ -24,8 +25,8 @@ public class ViolationRecordsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateViolationRecordDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var record = await _service.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已建立"));
     }

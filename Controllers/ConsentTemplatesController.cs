@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ConsentTemplate;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,7 +20,7 @@ public class ConsentTemplatesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "CanViewConsents")]
+    [Authorize(Policy = Policies.CanViewConsents)]
     public async Task<IActionResult> GetAll()
     {
         var templates = await _consentService.GetAllTemplatesAsync();
@@ -27,7 +28,7 @@ public class ConsentTemplatesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "CanViewConsents")]
+    [Authorize(Policy = Policies.CanViewConsents)]
     public async Task<IActionResult> GetById(int id)
     {
         var template = await _consentService.GetTemplateByIdAsync(id);
@@ -35,16 +36,16 @@ public class ConsentTemplatesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateConsents")]
+    [Authorize(Policy = Policies.CanCreateConsents)]
     public async Task<IActionResult> Create([FromBody] CreateConsentTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var template = await _consentService.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已建立"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateConsents")]
+    [Authorize(Policy = Policies.CanUpdateConsents)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateConsentTemplateDto dto)
     {
         var template = await _consentService.UpdateTemplateAsync(id, dto);
@@ -52,7 +53,7 @@ public class ConsentTemplatesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateConsents")]
+    [Authorize(Policy = Policies.CanUpdateConsents)]
     public async Task<IActionResult> Delete(int id)
     {
         await _consentService.DeleteTemplateAsync(id);

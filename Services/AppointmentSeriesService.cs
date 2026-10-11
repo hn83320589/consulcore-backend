@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.AppointmentSeries;
 using consulcore_backend.Exceptions;
@@ -12,18 +13,18 @@ public class AppointmentSeriesService
     private readonly IAuditService _audit;
     private readonly NotificationService _notify;
     private readonly AppointmentService _appointments;
+    private readonly ClinicClock _clock;
 
     public AppointmentSeriesService(
-        AppDbContext db, IAuditService audit, NotificationService notify, AppointmentService appointments)
+        AppDbContext db, IAuditService audit, NotificationService notify, AppointmentService appointments, ClinicClock clock)
     {
         _db = db;
         _audit = audit;
         _notify = notify;
         _appointments = appointments;
+        _clock = clock;
     }
 
-    // 台灣時區固定 UTC+8（無日光節約），以此計算「今天」避免 UTC 邊界日誤判
-    private static DateOnly LocalToday() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
 
     public async Task<AppointmentSeriesResponseDto> CreateAsync(
         CreateAppointmentSeriesDto dto, int orgId, int createdBy)
@@ -33,7 +34,7 @@ public class AppointmentSeriesService
             throw new BusinessRuleException("常態性預約上限為 3 個月");
 
         var startTime = TimeOnly.Parse(dto.StartTime);
-        var expiresAt = LocalToday().AddMonths(dto.Months);
+        var expiresAt = _clock.Today.AddMonths(dto.Months);
 
         var series = new AppointmentSeries
         {
@@ -68,7 +69,7 @@ public class AppointmentSeriesService
 
         // BR-07: 延長不超過 3 個月
         var newExpiry = series.ExpiresAt.AddMonths(dto.Months);
-        var maxExpiry = LocalToday().AddMonths(3);
+        var maxExpiry = _clock.Today.AddMonths(3);
         if (newExpiry > maxExpiry)
             throw new BusinessRuleException($"續約後到期日不可超過 {maxExpiry}（3 個月上限）");
 
@@ -99,7 +100,7 @@ public class AppointmentSeriesService
             .Include(a => a.ScheduleSlot)
             .Where(a => a.SeriesId == seriesId
                 && a.Status == AppointmentStatus.Scheduled
-                && a.ScheduleSlot.Date >= LocalToday())
+                && a.ScheduleSlot.Date >= _clock.Today)
             .ToListAsync();
 
         foreach (var apt in futureAppointments)
@@ -123,7 +124,7 @@ public class AppointmentSeriesService
     public async Task<List<AppointmentSeriesResponseDto>> GetPendingRenewalAsync()
     {
         // BR-10: 剩餘 ≤ 2 次的系列
-        var today = LocalToday();
+        var today = _clock.Today;
         var activeSeries = await _db.AppointmentSeries
             .Include(s => s.ClientProfile)
             .Include(s => s.TherapistUser)
@@ -164,7 +165,7 @@ public class AppointmentSeriesService
                 ["client_name"] = s.ClientProfile?.Name ?? "",
                 ["therapist_name"] = s.TherapistUser?.DisplayName ?? "",
             };
-            await _notify.SendAsync(NotificationEventType.SeriesRenewal, s.TherapistUserId, "therapist", s.OrganizationId, vars);
+            await _notify.SendAsync(NotificationEventType.SeriesRenewal, s.TherapistUserId, Roles.Therapist, s.OrganizationId, vars);
         }
 
         return pending.Count;
@@ -173,7 +174,7 @@ public class AppointmentSeriesService
     private async Task<int> GenerateAppointmentsAsync(
         AppointmentSeries series, int orgId, int createdBy)
     {
-        var today = LocalToday();
+        var today = _clock.Today;
         var startDate = today > DateOnly.FromDateTime(series.CreatedAt) ? today : DateOnly.FromDateTime(series.CreatedAt);
         var created = 0;
 

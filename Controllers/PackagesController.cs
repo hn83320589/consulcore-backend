@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Package;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/packages")]
-[Authorize(Policy = "CanViewBilling")]
+[Authorize(Policy = Policies.CanViewBilling)]
 public class PackagesController : ControllerBase
 {
     private readonly PackageService _service;
@@ -22,16 +23,16 @@ public class PackagesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateBilling")]
+    [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreatePackageDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var pkg = await _service.CreateAsync(dto, orgId);
         return Ok(ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已建立"));
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePackageDto dto)
     {
         var pkg = await _service.UpdateAsync(id, dto);
@@ -39,7 +40,7 @@ public class PackagesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Delete(int id)
     {
         await _service.DeleteAsync(id);

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.User;
 using consulcore_backend.Exceptions;
@@ -38,10 +39,8 @@ public class UserService
     }
 
     // 擁有者帳號與擁有者角色只能由擁有者本人處理：staff.manage（admin 也有）不足以接管機構
-    private const string OwnerRole = "owner";
-
     private async Task<bool> IsOwnerAsync(int userId) =>
-        await _db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.Role.Name == OwnerRole);
+        await _db.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.Role.Name == Roles.Owner);
 
     private async Task EnsureCanManageAsync(int targetUserId, bool actorIsOwner)
     {
@@ -51,7 +50,7 @@ public class UserService
 
     private static void EnsureCanAssignRoles(IEnumerable<string>? roleNames, bool actorIsOwner)
     {
-        if (!actorIsOwner && roleNames != null && roleNames.Contains(OwnerRole))
+        if (!actorIsOwner && roleNames != null && roleNames.Contains(Roles.Owner))
             throw new ForbiddenException("只有機構擁有者可以指派擁有者角色");
     }
 
@@ -161,7 +160,7 @@ public class UserService
             ?? throw new KeyNotFoundException("使用者不存在");
 
         // 不能刪除 owner
-        if (user.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == "owner"))
+        if (user.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == Roles.Owner))
         {
             // Need to load role names
             var roleNames = await _db.UserRoles
@@ -170,7 +169,7 @@ public class UserService
                 .Select(ur => ur.Role.Name)
                 .ToListAsync();
 
-            if (roleNames.Contains("owner"))
+            if (roleNames.Contains(Roles.Owner))
                 throw new BusinessRuleException("無法刪除機構擁有者帳號");
         }
 

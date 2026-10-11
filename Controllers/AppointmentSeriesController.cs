@@ -24,30 +24,30 @@ public class AppointmentSeriesController : ControllerBase
     // 已用 JWT 驗證的 staff 角色才可跨個案存取；header 偽造只會更受限（fail-closed）
     private bool ActingAsVerifiedNonClient() => ActiveRoleScope.ActingAsVerifiedNonClient(Request, User);
     private Task<int?> CurrentClientProfileIdAsync()
-        => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
+        => _clientService.GetClientProfileIdByUserAsync(User.GetUserId());
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateAppointments")]
+    [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentSeriesDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var series = await _seriesService.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已建立"));
     }
 
     [HttpPost("{id}/renew")]
-    [Authorize(Policy = "CanCreateAppointments")]
+    [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Renew(int id, [FromBody] RenewSeriesDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var series = await _seriesService.RenewAsync(id, dto, orgId, userId);
         return Ok(ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已續約"));
     }
 
     [HttpPost("{id}/end")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> End(int id)
     {
         var series = await _seriesService.EndAsync(id);
@@ -55,7 +55,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpGet("pending-renewal")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> PendingRenewal()
     {
         // 待續約清單為 staff 聚合視圖，非 staff 身份無權存取
@@ -67,7 +67,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
     {
         // 非 staff 身份只能查自己的常態預約，防以任意 id 讀取他人（IDOR）

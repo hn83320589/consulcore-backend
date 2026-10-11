@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.FormSubmission;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,17 +20,17 @@ public class FormSubmissionsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanUpdateClients")]
+    [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Submit([FromBody] SubmitFormDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var submission = await _formService.SubmitFormAsync(dto, orgId, userId);
         return Ok(ApiResponse<FormSubmissionResponseDto>.Ok(submission, "表單已提交"));
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetById(int id)
     {
         var submission = await _formService.GetSubmissionByIdAsync(id);
@@ -37,7 +38,7 @@ public class FormSubmissionsController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
         var submissions = await _formService.GetSubmissionsByClientAsync(clientProfileId);

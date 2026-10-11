@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace consulcore_backend.Authorization;
 
@@ -13,21 +12,6 @@ namespace consulcore_backend.Authorization;
 /// </summary>
 public static class ActiveRoleScope
 {
-    /// <summary>JWT roles claim（JSON 陣列字串）解析為角色集合；缺失或格式錯誤回空集合。</summary>
-    public static List<string> JwtRoles(ClaimsPrincipal user)
-    {
-        var claim = user.FindFirst("roles")?.Value;
-        if (string.IsNullOrEmpty(claim)) return [];
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(claim) ?? [];
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
-    }
-
     /// <summary>
     /// 請求是否以「已驗證的非個案（staff）角色」發出。
     /// active role 必須非 <c>client</c>、且確實存在於 JWT roles 才承認。
@@ -36,14 +20,14 @@ public static class ActiveRoleScope
     public static bool ActingAsVerifiedNonClient(HttpRequest request, ClaimsPrincipal user)
     {
         var role = request.Headers["X-Active-Role"].FirstOrDefault();
-        if (string.IsNullOrEmpty(role) || role == "client") return false;
-        return JwtRoles(user).Contains(role);
+        if (string.IsNullOrEmpty(role) || role == Roles.Client) return false;
+        return user.GetJwtRoles().Contains(role);
     }
 
     /// <summary>請求是否以指定角色發出，且該角色確實存在於 JWT roles。</summary>
     public static bool ActingAsVerified(HttpRequest request, ClaimsPrincipal user, string role)
     {
         return request.Headers["X-Active-Role"].FirstOrDefault() == role
-            && JwtRoles(user).Contains(role);
+            && user.GetJwtRoles().Contains(role);
     }
 }

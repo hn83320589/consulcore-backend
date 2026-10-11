@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Auth;
 using consulcore_backend.Exceptions;
@@ -55,7 +56,7 @@ public class AuthService
 
         // 檢查是否為個案帳號且需要首次改密碼（需在產生 token 前算出，寫入 claim 供 middleware 強制）
         var mustChangePassword = false;
-        if (roles.Contains("client"))
+        if (roles.Contains(Roles.Client))
         {
             var clientProfile = await _db.ClientProfiles
                 .IgnoreQueryFilters()
@@ -106,10 +107,10 @@ public class AuthService
         // 2. 建立 4 個預設 Role
         var defaultRoles = new[]
         {
-            new Role { OrganizationId = org.Id, Name = "owner", Description = "機構擁有者", IsSystemDefault = true },
-            new Role { OrganizationId = org.Id, Name = "admin", Description = "管理員", IsSystemDefault = true },
-            new Role { OrganizationId = org.Id, Name = "therapist", Description = "心理師", IsSystemDefault = true },
-            new Role { OrganizationId = org.Id, Name = "client", Description = "個案", IsSystemDefault = true },
+            new Role { OrganizationId = org.Id, Name = Roles.Owner, Description = "機構擁有者", IsSystemDefault = true },
+            new Role { OrganizationId = org.Id, Name = Roles.Admin, Description = "管理員", IsSystemDefault = true },
+            new Role { OrganizationId = org.Id, Name = Roles.Therapist, Description = "心理師", IsSystemDefault = true },
+            new Role { OrganizationId = org.Id, Name = Roles.Client, Description = "個案", IsSystemDefault = true },
         };
 
         _db.Roles.AddRange(defaultRoles);
@@ -119,7 +120,7 @@ public class AuthService
         var allPermissions = await _db.Permissions.ToListAsync();
         var permissionMap = allPermissions.ToDictionary(p => p.Code);
 
-        var rolePermissionMappings = GetDefaultRolePermissions();
+        var rolePermissionMappings = DefaultRolePermissions.ByRole;
 
         foreach (var role in defaultRoles)
         {
@@ -154,7 +155,7 @@ public class AuthService
         await _db.SaveChangesAsync();
 
         // 5. 指派 Owner 角色
-        var ownerRole = defaultRoles.First(r => r.Name == "owner");
+        var ownerRole = defaultRoles.First(r => r.Name == Roles.Owner);
         _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = ownerRole.Id });
         await _db.SaveChangesAsync();
 
@@ -163,7 +164,7 @@ public class AuthService
         await DatabaseSeeder.SeedNotificationTemplatesAsync(_db, org.Id);
 
         // 7. 產生 JWT
-        var roles = new List<string> { "owner" };
+        var roles = new List<string> { Roles.Owner };
         var token = GenerateJwtToken(user, roles);
 
         await _audit.LogAsync("register", "organization", org.Id, "註冊新機構",
@@ -271,11 +272,11 @@ public class AuthService
 
         var claims = new[]
         {
-            new Claim("userId", user.Id.ToString()),
-            new Claim("organizationId", user.OrganizationId.ToString()),
-            new Claim("username", user.Username),
-            new Claim("roles", JsonSerializer.Serialize(roles)),
-            new Claim("mustChangePassword", mustChangePassword ? "true" : "false")
+            new Claim(JwtClaims.UserId, user.Id.ToString()),
+            new Claim(JwtClaims.OrganizationId, user.OrganizationId.ToString()),
+            new Claim(JwtClaims.Username, user.Username),
+            new Claim(JwtClaims.Roles, JsonSerializer.Serialize(roles)),
+            new Claim(JwtClaims.MustChangePassword, mustChangePassword ? "true" : "false")
         };
 
         var token = new JwtSecurityToken(
@@ -286,55 +287,5 @@ public class AuthService
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private static Dictionary<string, List<string>> GetDefaultRolePermissions()
-    {
-        return new Dictionary<string, List<string>>
-        {
-            ["owner"] =
-            [
-                "client.view", "client.create", "client.update", "client.delete", "client.manage",
-                "appointment.view", "appointment.create", "appointment.update", "appointment.delete",
-                "schedule.view", "schedule.create", "schedule.update", "schedule.delete",
-                "session.view", "session.create", "session.update", "session.lock",
-                "consent.view", "consent.create", "consent.update", "consent.void",
-                "billing.view", "billing.create", "billing.update", "billing.refund",
-                "notification.manage",
-                "staff.manage",
-                "room.manage",
-                "audit.view",
-                "performance.view", "performance.manage",
-                "org.settings"
-            ],
-            ["admin"] =
-            [
-                "client.view", "client.create", "client.update", "client.manage",
-                "appointment.view", "appointment.create", "appointment.update", "appointment.delete",
-                "schedule.view", "schedule.create", "schedule.update", "schedule.delete",
-                "session.view",
-                "consent.view", "consent.create", "consent.update",
-                "billing.view", "billing.create", "billing.update",
-                "notification.manage",
-                "staff.manage",
-                "room.manage",
-                "audit.view",
-                "performance.view"
-            ],
-            ["therapist"] =
-            [
-                "client.view", "client.create", "client.update",
-                "appointment.view", "appointment.create", "appointment.update",
-                "schedule.view",
-                "session.view", "session.create", "session.update", "session.lock",
-                // 不含 billing.view：收費 / 報表 / 匯出是全機構資料，心理師預設不可見（決策 D7）
-                "consent.view", "consent.create"
-            ],
-            ["client"] =
-            [
-                "appointment.view",
-                "consent.view"
-            ]
-        };
     }
 }

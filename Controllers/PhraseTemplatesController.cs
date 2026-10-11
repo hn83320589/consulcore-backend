@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.PhraseTemplate;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -21,7 +22,7 @@ public class PhraseTemplatesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var phrases = await _phraseService.GetAllAsync(userId);
         return Ok(ApiResponse<List<PhraseTemplateResponseDto>>.Ok(phrases));
     }
@@ -29,8 +30,8 @@ public class PhraseTemplatesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePhraseTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var phrase = await _phraseService.CreateAsync(dto, orgId, userId);
         return Ok(ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已建立"));
     }
@@ -38,7 +39,7 @@ public class PhraseTemplatesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdatePhraseTemplateDto dto)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var phrase = await _phraseService.UpdateAsync(id, dto, userId);
         return Ok(ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已更新"));
     }
@@ -46,7 +47,7 @@ public class PhraseTemplatesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         await _phraseService.DeleteAsync(id, userId);
         return Ok(ApiResponse<object>.Ok(new { }, "常用語範本已刪除"));
     }

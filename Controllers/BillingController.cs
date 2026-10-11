@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Billing;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,17 +9,17 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/billing")]
-[Authorize(Policy = "CanViewBilling")]
+[Authorize(Policy = Policies.CanViewBilling)]
 public class BillingController : ControllerBase
 {
     private readonly BillingService _billingService;
     public BillingController(BillingService billingService) { _billingService = billingService; }
 
     [HttpPost("on-completed/{appointmentId}")]
-    [Authorize(Policy = "CanCreateBilling")]
+    [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> OnCompleted(int appointmentId)
     {
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var userId = User.GetUserId();
         var record = await _billingService.OnAppointmentCompletedAsync(appointmentId, userId);
         if (record == null)
             return Ok(ApiResponse<object>.Ok(new { }, "無適用費率，未產生收費記錄"));
@@ -26,17 +27,17 @@ public class BillingController : ControllerBase
     }
 
     [HttpPost("purchase-package")]
-    [Authorize(Policy = "CanCreateBilling")]
+    [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> PurchasePackage([FromBody] PurchasePackageDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var userId = int.Parse(User.FindFirst("userId")!.Value);
+        var orgId = User.GetOrganizationId();
+        var userId = User.GetUserId();
         var cp = await _billingService.PurchasePackageAsync(dto, orgId, userId);
         return Ok(ApiResponse<ClientPackageResponseDto>.Ok(cp, "套餐已購買"));
     }
 
     [HttpPost("{id}/confirm")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Confirm(int id, [FromBody] ConfirmPaymentDto dto)
     {
         var record = await _billingService.ConfirmPaymentAsync(id, dto);
@@ -44,7 +45,7 @@ public class BillingController : ControllerBase
     }
 
     [HttpPost("{id}/refund")]
-    [Authorize(Policy = "CanRefundBilling")]
+    [Authorize(Policy = Policies.CanRefundBilling)]
     public async Task<IActionResult> Refund(int id, [FromBody] RefundDto dto)
     {
         var record = await _billingService.RefundAsync(id, dto);
@@ -52,7 +53,7 @@ public class BillingController : ControllerBase
     }
 
     [HttpPost("{id}/waive")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Waive(int id)
     {
         var record = await _billingService.WaiveAsync(id);

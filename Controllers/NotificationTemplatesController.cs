@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Notification;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/notification-templates")]
-[Authorize(Policy = "CanManageNotifications")]
+[Authorize(Policy = Policies.CanManageNotifications)]
 public class NotificationTemplatesController : ControllerBase
 {
     private readonly NotificationService _service;
@@ -24,7 +25,7 @@ public class NotificationTemplatesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateNotificationTemplateDto dto)
     {
-        var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
+        var orgId = User.GetOrganizationId();
         var t = await _service.CreateTemplateAsync(dto, orgId);
         return Ok(ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已建立"));
     }

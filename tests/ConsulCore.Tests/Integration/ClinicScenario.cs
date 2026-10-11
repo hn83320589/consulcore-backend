@@ -8,7 +8,7 @@ namespace ConsulCore.Tests.Integration;
 /// </summary>
 public record ClinicScenario(ApiTestClient Api, string OwnerToken, int TherapistUserId, int ClientProfileId, DateOnly Monday)
 {
-    public static async Task<ClinicScenario> CreateAsync(ApiTestClient api, string prefix)
+    public static async Task<ClinicScenario> CreateAsync(ApiTestClient api, string prefix, bool expand = true)
     {
         var owner = await api.RegisterOrganizationAsync($"{prefix} 診所", $"{prefix}_owner");
         var room = await api.PostOkAsync(owner, "owner", "/api/rooms", new { name = "陽光室" });
@@ -27,8 +27,11 @@ public record ClinicScenario(ApiTestClient Api, string OwnerToken, int Therapist
         var today = DateOnly.FromDateTime(DateTime.Today);
         var daysAhead = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
         var monday = today.AddDays(daysAhead == 0 ? 7 : daysAhead);
-        await api.PostOkAsync(owner, "owner", "/api/schedule-slots/expand",
-            new { startDate = monday.ToString("yyyy-MM-dd"), endDate = monday.AddDays(4).ToString("yyyy-MM-dd") });
+        if (expand)
+        {
+            await api.PostOkAsync(owner, "owner", "/api/schedule-slots/expand",
+                new { startDate = monday.ToString("yyyy-MM-dd"), endDate = monday.AddDays(4).ToString("yyyy-MM-dd") });
+        }
 
         var client = await api.PostOkAsync(owner, "owner", "/api/client-profiles",
             new { name = "王小明", createAccount = false, therapistUserId = therapistId });
