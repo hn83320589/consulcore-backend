@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ClientMemo;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -62,7 +63,7 @@ public class ClientMemoService
 
         // BR-16: 僅建立者可編輯
         if (memo.TherapistUserId != therapistUserId)
-            throw new UnauthorizedAccessException("僅建立此備忘的心理師可編輯");
+            throw new ForbiddenException("僅建立此備忘的心理師可編輯");
 
         if (dto.Category != null) memo.Category = dto.Category;
         if (dto.Content != null) memo.Content = dto.Content;
@@ -81,7 +82,7 @@ public class ClientMemoService
             ?? throw new KeyNotFoundException("個案備忘不存在");
 
         if (memo.TherapistUserId != therapistUserId)
-            throw new UnauthorizedAccessException("僅建立此備忘的心理師可刪除");
+            throw new ForbiddenException("僅建立此備忘的心理師可刪除");
 
         _db.ClientMemos.Remove(memo);
         await _db.SaveChangesAsync();

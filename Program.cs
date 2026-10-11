@@ -8,6 +8,7 @@ using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -23,6 +24,19 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // 模型驗證失敗也回統一的 ApiResponse（預設是 ValidationProblemDetails，與契約不符）
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value?.Errors.Count > 0)
+                .SelectMany(e => e.Value!.Errors.Select(err =>
+                    string.IsNullOrEmpty(err.ErrorMessage) ? $"{e.Key} 格式不正確" : err.ErrorMessage))
+                .ToList();
+            return new BadRequestObjectResult(ApiResponse<object>.Fail($"輸入資料有誤：{errors.FirstOrDefault()}", errors));
+        };
     });
 
 // Swagger
@@ -119,6 +133,30 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
         ClockSkew = TimeSpan.Zero
+    };
+    options.Events = new JwtBearerEvents
+    {
+        // token 有效期內帳號或機構被停用時立即失效（否則停用後 24 小時內仍可使用）。
+        // 驗證失敗回空內容的 401，前端據此視為登入過期。
+        OnTokenValidated = async context =>
+        {
+            var userIdClaim = context.Principal?.FindFirst("userId")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                context.Fail("token 缺少 userId");
+                return;
+            }
+
+            // 用獨立 scope：AppDbContext 在建構時就從 HttpContext.User 讀機構 id，此時 User 尚未設定；
+            // 若取用請求的 scoped 實例，整個請求的多租戶 filter 都會變成「機構 = null」而查不到任何資料
+            using var scope = context.HttpContext.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var active = await db.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Id == userId && u.IsActive && u.Organization.IsActive);
+            if (!active)
+                context.Fail("帳號或機構已停用");
+        },
     };
 });
 

@@ -284,9 +284,19 @@
 | 擁有者保護：非 owner 不可指派 owner 角色、不可修改/重設密碼/停用 owner 帳號、不可調整系統角色權限 | ⚠️ 會出現**新的 403**，需調整 UI → 見 5 |
 | 非 Development 環境拒絕以 placeholder JWT 金鑰啟動 | **無**（部署設定） |
 | 個案初始密碼改為隨機，帳密只在 `POST /api/client-profiles` 回應的 `initialCredentials` 回傳一次；帳號尾碼改為隨機 | ✅ **前端已先完成**（`763b67a`：InitialCredentialsModal） |
+| `POST /api/billing/on-completed/{id}`：預約須為 completed（否則 400）；同一預約重複呼叫回傳既有收費單，不再重複扣次 | **目前無**：`billingService.onCompleted()` 有定義但沒有任何 store / 頁面呼叫；日後接上時，請只在預約完成後呼叫，並可安全重試 |
+| 同一時段被同時預約：後寫者回 **409**（`ApiResponse`，訊息可直接顯示）；其他併發寫入衝突同樣回 409 | ✅ 前端已處理（`34ad953`：httpService 對 409 顯示訊息） |
+| 「非建立者」編輯/刪除/鎖定晤談紀錄、備忘、常用語：**401 → 403**；改密碼時目前密碼錯誤：**401 → 400** | **無**：前端 F3（`f099d77`）已先相容，兩者都只顯示訊息、不登出 |
+| 模型驗證失敗（必填、長度等）改回 `ApiResponse`（`message` 為第一個錯誤、`errors` 為全部），原本是 ASP.NET 的 ValidationProblemDetails | **改善**：原本攔截器讀不到 `message` 只顯示「請求無法完成」，現在會顯示具體原因 |
+| 框架 / EF 內部的例外不再以 400 回傳原始訊息，改為 500 +「伺服器發生錯誤」 | **無** |
+| `PUT /api/client-profiles/{id}`：therapist 只能修改自己指派中的個案，否則 **403**；建立 / 指派 / 移轉時指定的心理師須為本機構啟用中的 therapist，否則 **400** | **無**：ClientDetailView 對代診（非指派）心理師本來就唯讀（`canEditClient`） |
+| therapist 預設權限移除 `billing.view`（收費、費率、套餐、折扣、報表、匯出皆 403）；收費與稽核匯出寫入稽核 `export` | ✅ **前端已先完成**（`17bbd08`：個案詳情依 `billing.view` 才顯示 / 抓收費）；收費管理、費率設定頁本來就以路由權限擋下 |
+| 帳號或機構停用後，既有 token 立即失效：任何請求回**空內容的 401** | **無**：F3 規則（帶 token + 空內容的 401 → 登入過期）正好處理 |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
 
-### 5. ⬜ 擁有者保護：新的 403 情境
+### 5. ✅ 擁有者保護：新的 403 情境
+
+> **前端已處理（`2a0e88c`）**：非 owner 時角色勾選不含 owner、擁有者那一列不顯示編輯 / 停用 / 重設密碼；權限矩陣原本就對系統角色唯讀。
 
 | 端點 | 何時 403 |
 |------|---------|

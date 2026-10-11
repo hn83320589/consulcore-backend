@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.PhraseTemplate;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,7 +51,7 @@ public class PhraseService
             ?? throw new KeyNotFoundException("常用語範本不存在");
 
         if (phrase.TherapistUserId != therapistUserId)
-            throw new UnauthorizedAccessException("僅建立者可編輯");
+            throw new ForbiddenException("僅建立者可編輯");
 
         if (dto.Category != null) phrase.Category = dto.Category;
         if (dto.Title != null) phrase.Title = dto.Title;
@@ -68,7 +69,7 @@ public class PhraseService
             ?? throw new KeyNotFoundException("常用語範本不存在");
 
         if (phrase.TherapistUserId != therapistUserId)
-            throw new UnauthorizedAccessException("僅建立者可刪除");
+            throw new ForbiddenException("僅建立者可刪除");
 
         _db.PhraseTemplates.Remove(phrase);
         await _db.SaveChangesAsync();

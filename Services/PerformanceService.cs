@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.PerformanceReview;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -242,7 +243,7 @@ public class PerformanceService
         "monthlySessionCount" => m.MonthlySessionCount,
         "monthlySessionHours" => m.MonthlySessionHours,
         "paymentCompletionRate" => m.PaymentCompletionRate,
-        _ => throw new ArgumentException($"未知的指標鍵：{metric}"),
+        _ => throw new BusinessRuleException($"未知的指標鍵：{metric}"),
     };
 
     private async Task<PerformanceReviewResponseDto> GetByIdAsync(int id, bool includeComment)

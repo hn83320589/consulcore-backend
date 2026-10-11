@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Notification;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -169,9 +170,11 @@ public class NotificationService
                 && n.Status == NotificationStatus.Sent);
     }
 
-    public async Task MarkAsReadAsync(int notificationId)
+    public async Task MarkAsReadAsync(int notificationId, int userId)
     {
-        var n = await _db.NotificationLogs.FindAsync(notificationId)
+        // 只能標記自己的通知；別人的通知一律當作不存在（不透露該通知存在）
+        var n = await _db.NotificationLogs
+            .FirstOrDefaultAsync(x => x.Id == notificationId && x.RecipientId == userId)
             ?? throw new KeyNotFoundException("通知不存在");
         n.Status = NotificationStatus.Read;
         n.ReadAt = DateTime.UtcNow;
@@ -224,7 +227,7 @@ public class NotificationService
             .AnyAsync(t => t.OrganizationId == orgId && t.EventType == dto.EventType && t.IsRequired);
 
         if (isRequired && (!dto.EmailEnabled || !dto.SmsEnabled || !dto.InAppEnabled))
-            throw new InvalidOperationException("此為必要通知，無法關閉");
+            throw new BusinessRuleException("此為必要通知，無法關閉");
 
         var pref = await _db.NotificationPreferences
             .IgnoreQueryFilters()

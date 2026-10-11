@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Billing;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,19 @@ public class BillingService
             .Include(a => a.ClientProfile)
             .FirstOrDefaultAsync(a => a.Id == appointmentId)
             ?? throw new KeyNotFoundException("預約不存在");
+
+        if (apt.Status != AppointmentStatus.Completed)
+            throw new BusinessRuleException("只有已完成的預約可以產生收費");
+
+        // 冪等：同一筆預約只開一張單（雙擊、重試不可重複扣套餐或重複收費）。
+        // 退款後是否允許重新開單尚無業務規則，目前一律回傳既有那張。
+        var existing = await _db.PaymentRecords
+            .Where(r => r.AppointmentId == appointmentId)
+            .OrderBy(r => r.Id)
+            .Select(r => (int?)r.Id)
+            .FirstOrDefaultAsync();
+        if (existing.HasValue)
+            return await GetPaymentByIdAsync(existing.Value);
 
         // 1. 檢查是否有 active 套餐
         var clientPackage = await _db.ClientPackages
@@ -164,7 +178,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Pending)
-            throw new InvalidOperationException("此記錄非待付款狀態");
+            throw new BusinessRuleException("此記錄非待付款狀態");
         record.Status = PaymentStatus.Paid;
         record.PaymentMethod = dto.PaymentMethod;
         record.PaidAt = DateTime.UtcNow;
@@ -179,7 +193,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Paid)
-            throw new InvalidOperationException("僅已付款記錄可退費");
+            throw new BusinessRuleException("僅已付款記錄可退費");
         record.Status = PaymentStatus.Refunded;
         record.Note = dto.Note;
         record.UpdatedAt = DateTime.UtcNow;
@@ -193,7 +207,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Pending)
-            throw new InvalidOperationException("僅待付款記錄可免除");
+            throw new BusinessRuleException("僅待付款記錄可免除");
         record.Status = PaymentStatus.Waived;
         record.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -259,6 +273,10 @@ public class BillingService
             .Select(r => new { r.Id, ClientName = r.ClientProfile != null ? r.ClientProfile.Name : "",
                 r.OriginalAmount, r.FinalAmount, r.PaymentMethod, r.PaymentType, r.Status, r.PaidAt, r.CreatedAt })
             .ToListAsync();
+
+        // 匯出含個案姓名與金額，須留稽核
+        await _audit.LogAsync("export", "payment_record", 0, $"匯出收費紀錄 CSV（{payments.Count} 筆）",
+            new { startDate, endDate, clientProfileId, therapistUserId, status });
 
         var sb = new System.Text.StringBuilder();
         sb.AppendLine(CsvWriter.Row("ID", "個案", "原始金額", "實收金額", "付款方式", "類型", "狀態", "付款時間", "建立時間"));

@@ -143,7 +143,7 @@ X-Active-Role: <目前作用中的角色>      // 例如 owner / admin / therapi
 - 此狀態下，後端中介層會**攔截除下列以外的所有請求並回 403**（message：`首次登入請先變更密碼後才能使用其他功能`）：
   - `PUT /api/auth/change-password`
   - `GET /api/auth/me`
-  - `POST /api/auth/logout`（若前端有呼叫）
+  （沒有 `/api/auth/logout` 端點：登出是純前端清除狀態）
 - 前端流程：登入 → 若 `mustChangePassword` → 強制導到改密碼頁 → 改成功後**重新登入**（改密碼不會即時換發 token，需重登才拿到 `mustChangePassword=false` 的新 token）。
 
 ```ts
@@ -204,7 +204,7 @@ performance.view  performance.manage  org.settings
 |------|--------|------|
 | **owner** | 32 | 全部權限 |
 | **admin** | 24 | 個案（無 delete）、預約、排班、收費（無 refund）、人員/診間/通知管理、稽核檢視、考核檢視；**無**：`client.delete`、`session.create/update/lock`、`consent.void`、`billing.refund`、`performance.manage`、`org.settings` |
-| **therapist** | 14 | `client.view/create/update`、`appointment.view/create/update`、`schedule.view`、`session.view/create/update/lock`、`consent.view/create`、`billing.view` |
+| **therapist** | 13 | `client.view/create/update`、`appointment.view/create/update`、`schedule.view`、`session.view/create/update/lock`、`consent.view/create`（不含 `billing.view`：收費 / 報表為全機構資料） |
 | **client** | 2 | `appointment.view`、`consent.view` |
 
 > 角色權限可由 Owner 透過 `PUT /api/roles/{id}/permissions` 調整，所以前端務必以 `/me` 的即時 `permissions` 為準，不要寫死上表。

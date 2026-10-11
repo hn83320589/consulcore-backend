@@ -12,12 +12,11 @@ public class MustChangePasswordMiddleware
 {
     private readonly RequestDelegate _next;
 
-    // 允許在未改密碼狀態下呼叫的端點（改密碼本身、讀取自身資料、登出）
+    // 允許在未改密碼狀態下呼叫的端點（改密碼本身、讀取自身資料）；登出為純前端行為，無後端端點
     private static readonly string[] AllowedPaths =
     [
         "/api/auth/change-password",
         "/api/auth/me",
-        "/api/auth/logout",
     ];
 
     public MustChangePasswordMiddleware(RequestDelegate next)

@@ -1,6 +1,7 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ScheduleSlot;
 using consulcore_backend.DTOs.ScheduleTemplate;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -103,7 +104,7 @@ public class ScheduleService
             startDate = today;
 
         if (endDate < startDate)
-            throw new InvalidOperationException("結束日期不可早於開始日期");
+            throw new BusinessRuleException("結束日期不可早於開始日期");
 
         var templates = await _db.ScheduleTemplates
             .Where(t => t.IsActive)
@@ -205,7 +206,7 @@ public class ScheduleService
         // BR-05
         var today = LocalToday();
         if (slot.Date < today)
-            throw new InvalidOperationException("不可調整過去日期的時段");
+            throw new BusinessRuleException("不可調整過去日期的時段");
 
         // 心理師請假封鎖時段：若已有預約，取消該預約並通知受影響個案（觸發點 #4 therapist_leave）
         var affected = await _db.Appointments
@@ -253,10 +254,10 @@ public class ScheduleService
 
         var today = LocalToday();
         if (slot.Date < today)
-            throw new InvalidOperationException("不可調整過去日期的時段");
+            throw new BusinessRuleException("不可調整過去日期的時段");
 
         if (slot.Status != SlotStatus.Blocked)
-            throw new InvalidOperationException("此時段非封鎖狀態");
+            throw new BusinessRuleException("此時段非封鎖狀態");
 
         slot.Status = SlotStatus.Available;
         slot.Note = null;

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ClientProfile;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,8 +76,25 @@ public class ClientService
         return clients.Select(MapToDto).ToList();
     }
 
+    // 指定的心理師必須是本機構（Users 有機構 query filter）、啟用中、具 therapist 角色的使用者
+    private async Task EnsureTherapistOfOrganizationAsync(int userId)
+    {
+        var valid = await _db.Users.AnyAsync(u => u.Id == userId && u.IsActive
+            && u.UserRoles.Any(ur => ur.Role.Name == "therapist"));
+        if (!valid)
+            throw new BusinessRuleException("指定的心理師不存在，或不是本機構的心理師");
+    }
+
+    private Task<bool> IsAssignedTherapistAsync(int clientId, int therapistUserId) =>
+        _db.TherapistClients.AnyAsync(tc => tc.ClientProfileId == clientId
+            && tc.TherapistUserId == therapistUserId
+            && tc.Status == TherapistClientStatus.Active);
+
     public async Task<ClientProfileResponseDto> CreateAsync(CreateClientProfileDto dto, int orgId)
     {
+        if (dto.TherapistUserId.HasValue)
+            await EnsureTherapistOfOrganizationAsync(dto.TherapistUserId.Value);
+
         var client = new Models.ClientProfile
         {
             OrganizationId = orgId,
@@ -108,7 +126,7 @@ public class ClientService
                 .IgnoreQueryFilters()
                 .AnyAsync(u => u.Username == username);
             if (usernameExists)
-                throw new InvalidOperationException($"自動產生的使用者名稱 '{username}' 已被使用，請改用不建立帳號方式");
+                throw new BusinessRuleException($"自動產生的使用者名稱 '{username}' 已被使用，請改用不建立帳號方式");
 
             var user = new User
             {
@@ -124,7 +142,7 @@ public class ClientService
 
             // 指派 client 角色
             var clientRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == "client")
-                ?? throw new InvalidOperationException("找不到 client 角色");
+                ?? throw new BusinessRuleException("找不到 client 角色");
             _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = clientRole.Id });
 
             client.UserId = user.Id;
@@ -161,10 +179,16 @@ public class ClientService
         return created;
     }
 
-    public async Task<ClientProfileResponseDto> UpdateAsync(int id, UpdateClientProfileDto dto)
+    /// <param name="hasFullScope">owner / admin（已驗證）可修改全機構個案</param>
+    public async Task<ClientProfileResponseDto> UpdateAsync(
+        int id, UpdateClientProfileDto dto, int actorUserId, bool hasFullScope)
     {
         var client = await _db.ClientProfiles.FindAsync(id)
             ?? throw new KeyNotFoundException("個案不存在");
+
+        // BR-20 的跨心理師存取只放寬「唯讀」；修改限指派中的心理師
+        if (!hasFullScope && !await IsAssignedTherapistAsync(id, actorUserId))
+            throw new ForbiddenException("只有指派中的心理師可以修改此個案資料");
 
         if (dto.Name != null) client.Name = dto.Name;
         if (dto.IdNumber != null) client.IdNumber = dto.IdNumber;
@@ -206,6 +230,7 @@ public class ClientService
     {
         var client = await _db.ClientProfiles.FindAsync(clientId)
             ?? throw new KeyNotFoundException("個案不存在");
+        await EnsureTherapistOfOrganizationAsync(dto.TherapistUserId);
 
         // 檢查是否已有此心理師的 active 關係
         var existing = await _db.TherapistClients
@@ -213,7 +238,7 @@ public class ClientService
                 && tc.TherapistUserId == dto.TherapistUserId
                 && tc.Status == TherapistClientStatus.Active);
         if (existing)
-            throw new InvalidOperationException("此心理師已指派給該個案");
+            throw new BusinessRuleException("此心理師已指派給該個案");
 
         _db.TherapistClients.Add(new TherapistClient
         {
@@ -232,6 +257,8 @@ public class ClientService
     public async Task<ClientProfileResponseDto> TransferTherapistAsync(
         int clientId, int currentTherapistUserId, TransferTherapistDto dto, int orgId)
     {
+        await EnsureTherapistOfOrganizationAsync(dto.NewTherapistUserId);
+
         // 結束舊關係
         var oldRelation = await _db.TherapistClients
             .FirstOrDefaultAsync(tc => tc.ClientProfileId == clientId
@@ -263,7 +290,7 @@ public class ClientService
     {
         var validStatuses = new[] { ClientStatus.Pending, ClientStatus.Active, ClientStatus.Suspended, ClientStatus.Closed };
         if (!validStatuses.Contains(dto.Status))
-            throw new InvalidOperationException($"無效的狀態：{dto.Status}");
+            throw new BusinessRuleException($"無效的狀態：{dto.Status}");
 
         var client = await _db.ClientProfiles.FindAsync(id)
             ?? throw new KeyNotFoundException("個案不存在");

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Auth;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -90,7 +91,7 @@ public class AuthService
             .AnyAsync(u => u.Username == dto.Username);
 
         if (usernameExists)
-            throw new InvalidOperationException("此使用者名稱已被使用");
+            throw new BusinessRuleException("此使用者名稱已被使用");
 
         // 1. 建立 Organization
         var org = new Organization
@@ -191,7 +192,7 @@ public class AuthService
                     .ThenInclude(r => r.RolePermissions)
                         .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(u => u.Id == userId && u.OrganizationId == orgId)
-            ?? throw new InvalidOperationException("使用者不存在");
+            ?? throw new BusinessRuleException("使用者不存在");
 
         var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
 
@@ -237,10 +238,10 @@ public class AuthService
     public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
     {
         var user = await _db.Users.FindAsync(userId)
-            ?? throw new InvalidOperationException("使用者不存在");
+            ?? throw new BusinessRuleException("使用者不存在");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
-            throw new UnauthorizedAccessException("目前密碼錯誤");
+            throw new BusinessRuleException("目前密碼錯誤"); // 已登入的輸入錯誤 → 400，不是認證失敗
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;
@@ -326,8 +327,8 @@ public class AuthService
                 "appointment.view", "appointment.create", "appointment.update",
                 "schedule.view",
                 "session.view", "session.create", "session.update", "session.lock",
-                "consent.view", "consent.create",
-                "billing.view"
+                // 不含 billing.view：收費 / 報表 / 匯出是全機構資料，心理師預設不可見（決策 D7）
+                "consent.view", "consent.create"
             ],
             ["client"] =
             [

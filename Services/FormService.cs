@@ -1,6 +1,7 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.FormSubmission;
 using consulcore_backend.DTOs.FormTemplate;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -73,7 +74,7 @@ public class FormService
 
         // 系統預設表單不可直接修改，須複製後再編輯（與刪除限制一致）
         if (template.IsSystemDefault)
-            throw new InvalidOperationException("系統預設表單不可修改，請複製後再編輯");
+            throw new BusinessRuleException("系統預設表單不可修改，請複製後再編輯");
 
         if (dto.Name != null) template.Name = dto.Name;
         if (dto.IsActive.HasValue) template.IsActive = dto.IsActive.Value;
@@ -83,7 +84,7 @@ public class FormService
             // 已有提交紀錄的範本不可硬刪 section/field，否則歷史 FormFieldValue 的 field 參照會斷裂
             var hasSubmissions = await _db.FormSubmissions.AnyAsync(fs => fs.TemplateId == id);
             if (hasSubmissions)
-                throw new InvalidOperationException(
+                throw new BusinessRuleException(
                     "此範本已有填答紀錄，不可變更結構；請複製為新範本後再編輯");
 
             // 移除舊的 sections/fields
@@ -116,7 +117,7 @@ public class FormService
             ?? throw new KeyNotFoundException("表單範本不存在");
 
         if (template.IsSystemDefault)
-            throw new InvalidOperationException("系統預設表單不可刪除");
+            throw new BusinessRuleException("系統預設表單不可刪除");
 
         foreach (var section in template.Sections)
             _db.FormFields.RemoveRange(section.Fields);

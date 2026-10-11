@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Appointment;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,15 +28,15 @@ public class AppointmentService
             ?? throw new KeyNotFoundException("時段不存在");
 
         if (slot.Status != SlotStatus.Available)
-            throw new InvalidOperationException("此時段已被預約或不可用");
+            throw new BusinessRuleException("此時段已被預約或不可用");
 
         // 時段衝突：同個案時段重疊（區間重疊，非僅比對起始時間）
         if (await HasClientTimeConflictAsync(dto.ClientProfileId, slot.Date, slot.StartTime, slot.EndTime))
-            throw new InvalidOperationException("此個案在重疊時段已有預約");
+            throw new BusinessRuleException("此個案在重疊時段已有預約");
 
         // 時段衝突：同心理師時段重疊（理論上 slot 為 reserved 就擋了，但多一層保護）
         if (await HasTherapistTimeConflictAsync(slot.TherapistUserId, slot.Date, slot.StartTime, slot.EndTime))
-            throw new InvalidOperationException("此心理師在重疊時段已有預約");
+            throw new BusinessRuleException("此心理師在重疊時段已有預約");
 
         // BR-06: 溫和提示
         var hints = await GetHintsAsync(dto.ClientProfileId, slot.TherapistUserId);
@@ -150,7 +151,7 @@ public class AppointmentService
             ?? throw new KeyNotFoundException("預約不存在");
 
         if (appointment.Status != AppointmentStatus.Scheduled)
-            throw new InvalidOperationException("只有已排定的預約可以改期");
+            throw new BusinessRuleException("只有已排定的預約可以改期");
 
         var newSlot = await _db.ScheduleSlots
             .Include(s => s.TherapistUser)
@@ -159,7 +160,7 @@ public class AppointmentService
             ?? throw new KeyNotFoundException("新時段不存在");
 
         if (newSlot.Status != SlotStatus.Available)
-            throw new InvalidOperationException("新時段已被預約或不可用");
+            throw new BusinessRuleException("新時段已被預約或不可用");
 
         // 覆寫前先記錄舊 slot id，供稽核使用
         var oldSlotId = appointment.ScheduleSlotId;
@@ -333,7 +334,7 @@ public class AppointmentService
     private static void ValidateStatusTransition(Appointment appointment, string newStatus)
     {
         if (appointment.Status != AppointmentStatus.Scheduled)
-            throw new InvalidOperationException(
+            throw new BusinessRuleException(
                 $"無法從 {appointment.Status} 轉換至 {newStatus}，只有 scheduled 狀態可操作");
     }
 
