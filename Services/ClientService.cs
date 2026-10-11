@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ClientProfile;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -108,7 +109,7 @@ public class ClientService
                 .IgnoreQueryFilters()
                 .AnyAsync(u => u.Username == username);
             if (usernameExists)
-                throw new InvalidOperationException($"自動產生的使用者名稱 '{username}' 已被使用，請改用不建立帳號方式");
+                throw new BusinessRuleException($"自動產生的使用者名稱 '{username}' 已被使用，請改用不建立帳號方式");
 
             var user = new User
             {
@@ -124,7 +125,7 @@ public class ClientService
 
             // 指派 client 角色
             var clientRole = await _db.Roles.FirstOrDefaultAsync(r => r.Name == "client")
-                ?? throw new InvalidOperationException("找不到 client 角色");
+                ?? throw new BusinessRuleException("找不到 client 角色");
             _db.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = clientRole.Id });
 
             client.UserId = user.Id;
@@ -213,7 +214,7 @@ public class ClientService
                 && tc.TherapistUserId == dto.TherapistUserId
                 && tc.Status == TherapistClientStatus.Active);
         if (existing)
-            throw new InvalidOperationException("此心理師已指派給該個案");
+            throw new BusinessRuleException("此心理師已指派給該個案");
 
         _db.TherapistClients.Add(new TherapistClient
         {
@@ -263,7 +264,7 @@ public class ClientService
     {
         var validStatuses = new[] { ClientStatus.Pending, ClientStatus.Active, ClientStatus.Suspended, ClientStatus.Closed };
         if (!validStatuses.Contains(dto.Status))
-            throw new InvalidOperationException($"無效的狀態：{dto.Status}");
+            throw new BusinessRuleException($"無效的狀態：{dto.Status}");
 
         var client = await _db.ClientProfiles.FindAsync(id)
             ?? throw new KeyNotFoundException("個案不存在");

@@ -46,8 +46,7 @@ public class ErrorHandlingMiddleware
             DbUpdateConcurrencyException => (HttpStatusCode.Conflict, true),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, true),
             KeyNotFoundException => (HttpStatusCode.NotFound, true),
-            ArgumentException => (HttpStatusCode.BadRequest, true),
-            InvalidOperationException => (HttpStatusCode.BadRequest, true),
+            BusinessRuleException => (HttpStatusCode.BadRequest, true),
             _ => (HttpStatusCode.InternalServerError, false),
         };
         context.Response.StatusCode = (int)statusCode;

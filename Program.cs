@@ -8,6 +8,7 @@ using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -23,6 +24,19 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // 模型驗證失敗也回統一的 ApiResponse（預設是 ValidationProblemDetails，與契約不符）
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value?.Errors.Count > 0)
+                .SelectMany(e => e.Value!.Errors.Select(err =>
+                    string.IsNullOrEmpty(err.ErrorMessage) ? $"{e.Key} 格式不正確" : err.ErrorMessage))
+                .ToList();
+            return new BadRequestObjectResult(ApiResponse<object>.Fail($"輸入資料有誤：{errors.FirstOrDefault()}", errors));
+        };
     });
 
 // Swagger

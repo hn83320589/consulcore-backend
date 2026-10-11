@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Billing;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,7 @@ public class BillingService
             ?? throw new KeyNotFoundException("預約不存在");
 
         if (apt.Status != AppointmentStatus.Completed)
-            throw new InvalidOperationException("只有已完成的預約可以產生收費");
+            throw new BusinessRuleException("只有已完成的預約可以產生收費");
 
         // 冪等：同一筆預約只開一張單（雙擊、重試不可重複扣套餐或重複收費）。
         // 退款後是否允許重新開單尚無業務規則，目前一律回傳既有那張。
@@ -177,7 +178,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Pending)
-            throw new InvalidOperationException("此記錄非待付款狀態");
+            throw new BusinessRuleException("此記錄非待付款狀態");
         record.Status = PaymentStatus.Paid;
         record.PaymentMethod = dto.PaymentMethod;
         record.PaidAt = DateTime.UtcNow;
@@ -192,7 +193,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Paid)
-            throw new InvalidOperationException("僅已付款記錄可退費");
+            throw new BusinessRuleException("僅已付款記錄可退費");
         record.Status = PaymentStatus.Refunded;
         record.Note = dto.Note;
         record.UpdatedAt = DateTime.UtcNow;
@@ -206,7 +207,7 @@ public class BillingService
         var record = await _db.PaymentRecords.FindAsync(id)
             ?? throw new KeyNotFoundException("收費記錄不存在");
         if (record.Status != PaymentStatus.Pending)
-            throw new InvalidOperationException("僅待付款記錄可免除");
+            throw new BusinessRuleException("僅待付款記錄可免除");
         record.Status = PaymentStatus.Waived;
         record.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();

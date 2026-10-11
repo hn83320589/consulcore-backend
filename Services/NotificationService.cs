@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Notification;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -224,7 +225,7 @@ public class NotificationService
             .AnyAsync(t => t.OrganizationId == orgId && t.EventType == dto.EventType && t.IsRequired);
 
         if (isRequired && (!dto.EmailEnabled || !dto.SmsEnabled || !dto.InAppEnabled))
-            throw new InvalidOperationException("此為必要通知，無法關閉");
+            throw new BusinessRuleException("此為必要通知，無法關閉");
 
         var pref = await _db.NotificationPreferences
             .IgnoreQueryFilters()

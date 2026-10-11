@@ -64,13 +64,13 @@ public class UserService
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Username == dto.Username);
         if (usernameExists)
-            throw new InvalidOperationException("此使用者名稱已被使用");
+            throw new BusinessRuleException("此使用者名稱已被使用");
 
         // 檢查 email 是否在同機構已存在
         var emailExists = await _db.Users
             .AnyAsync(u => u.Email == dto.Email);
         if (emailExists)
-            throw new InvalidOperationException("此 Email 在機構內已被使用");
+            throw new BusinessRuleException("此 Email 在機構內已被使用");
 
         var user = new User
         {
@@ -90,7 +90,7 @@ public class UserService
             .ToListAsync();
 
         if (roles.Count != dto.Roles.Count)
-            throw new InvalidOperationException("包含無效的角色名稱");
+            throw new BusinessRuleException("包含無效的角色名稱");
 
         foreach (var role in roles)
         {
@@ -119,7 +119,7 @@ public class UserService
             var emailExists = await _db.Users
                 .AnyAsync(u => u.Email == dto.Email && u.Id != id);
             if (emailExists)
-                throw new InvalidOperationException("此 Email 在機構內已被使用");
+                throw new BusinessRuleException("此 Email 在機構內已被使用");
             user.Email = dto.Email;
         }
 
@@ -135,7 +135,7 @@ public class UserService
                 .ToListAsync();
 
             if (newRoles.Count != dto.Roles.Count)
-                throw new InvalidOperationException("包含無效的角色名稱");
+                throw new BusinessRuleException("包含無效的角色名稱");
 
             // 移除舊角色
             _db.UserRoles.RemoveRange(user.UserRoles);
@@ -171,7 +171,7 @@ public class UserService
                 .ToListAsync();
 
             if (roleNames.Contains("owner"))
-                throw new InvalidOperationException("無法刪除機構擁有者帳號");
+                throw new BusinessRuleException("無法刪除機構擁有者帳號");
         }
 
         _db.UserRoles.RemoveRange(user.UserRoles);

@@ -54,7 +54,7 @@ public class SessionNoteService
             throw new ForbiddenException("僅建立者可編輯此晤談紀錄");
 
         if (note.IsLocked)
-            throw new InvalidOperationException("此晤談紀錄已鎖定，請先解鎖");
+            throw new BusinessRuleException("此晤談紀錄已鎖定，請先解鎖");
 
         if (dto.SoapS != null) note.SoapS = dto.SoapS;
         if (dto.SoapO != null) note.SoapO = dto.SoapO;
@@ -78,7 +78,7 @@ public class SessionNoteService
             throw new ForbiddenException("僅建立者可刪除此晤談紀錄");
 
         if (note.IsLocked)
-            throw new InvalidOperationException("已鎖定的晤談紀錄不可刪除");
+            throw new BusinessRuleException("已鎖定的晤談紀錄不可刪除");
 
         _db.SessionNotes.Remove(note);
         await _db.SaveChangesAsync();
@@ -95,7 +95,7 @@ public class SessionNoteService
             throw new ForbiddenException("僅建立者可鎖定此晤談紀錄");
 
         if (note.IsLocked)
-            throw new InvalidOperationException("此晤談紀錄已鎖定");
+            throw new BusinessRuleException("此晤談紀錄已鎖定");
 
         note.IsLocked = true;
         note.LockedAt = DateTime.UtcNow;
@@ -118,7 +118,7 @@ public class SessionNoteService
             throw new ForbiddenException("僅建立者可解鎖此晤談紀錄");
 
         if (!note.IsLocked)
-            throw new InvalidOperationException("此晤談紀錄未鎖定");
+            throw new BusinessRuleException("此晤談紀錄未鎖定");
 
         // 解鎖前快照
         var snapshot = new

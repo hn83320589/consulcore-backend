@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.AppointmentSeries;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,7 @@ public class AppointmentSeriesService
     {
         // BR-07: 上限 3 個月
         if (dto.Months > 3)
-            throw new InvalidOperationException("常態性預約上限為 3 個月");
+            throw new BusinessRuleException("常態性預約上限為 3 個月");
 
         var startTime = TimeOnly.Parse(dto.StartTime);
         var expiresAt = LocalToday().AddMonths(dto.Months);
@@ -63,13 +64,13 @@ public class AppointmentSeriesService
             ?? throw new KeyNotFoundException("常態性預約不存在");
 
         if (series.Status == SeriesStatus.Ended)
-            throw new InvalidOperationException("此系列已結束，無法續約");
+            throw new BusinessRuleException("此系列已結束，無法續約");
 
         // BR-07: 延長不超過 3 個月
         var newExpiry = series.ExpiresAt.AddMonths(dto.Months);
         var maxExpiry = LocalToday().AddMonths(3);
         if (newExpiry > maxExpiry)
-            throw new InvalidOperationException($"續約後到期日不可超過 {maxExpiry}（3 個月上限）");
+            throw new BusinessRuleException($"續約後到期日不可超過 {maxExpiry}（3 個月上限）");
 
         series.ExpiresAt = newExpiry;
         series.Status = SeriesStatus.Active;

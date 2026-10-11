@@ -1,6 +1,7 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ConsentRecord;
 using consulcore_backend.DTOs.ConsentTemplate;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -86,7 +87,7 @@ public class ConsentService
         var hasRecords = await _db.ConsentRecords
             .AnyAsync(r => r.ConsentTemplateId == id && r.Status == ConsentRecordStatus.Signed);
         if (hasRecords)
-            throw new InvalidOperationException("此範本有已簽署的記錄，無法刪除，請改為停用");
+            throw new BusinessRuleException("此範本有已簽署的記錄，無法刪除，請改為停用");
 
         _db.ConsentTemplates.Remove(template);
         await _db.SaveChangesAsync();
@@ -102,7 +103,7 @@ public class ConsentService
             ?? throw new KeyNotFoundException("同意書範本不存在");
 
         if (!template.IsActive)
-            throw new InvalidOperationException("此同意書範本已停用");
+            throw new BusinessRuleException("此同意書範本已停用");
 
         var client = await _db.ClientProfiles.FindAsync(dto.ClientProfileId)
             ?? throw new KeyNotFoundException("個案不存在");
@@ -138,7 +139,7 @@ public class ConsentService
             ?? throw new KeyNotFoundException("同意書記錄不存在");
 
         if (record.Status != ConsentRecordStatus.Signed)
-            throw new InvalidOperationException("只有已簽署的同意書可以作廢");
+            throw new BusinessRuleException("只有已簽署的同意書可以作廢");
 
         record.Status = ConsentRecordStatus.Voided;
         record.VoidedAt = DateTime.UtcNow;

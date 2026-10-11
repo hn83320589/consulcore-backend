@@ -1,5 +1,6 @@
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Room;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -94,7 +95,7 @@ public class RoomService
         var exists = await _db.TherapistRooms
             .AnyAsync(tr => tr.RoomId == roomId && tr.TherapistUserId == dto.TherapistUserId);
         if (exists)
-            throw new InvalidOperationException("此心理師已指派至該診間");
+            throw new BusinessRuleException("此心理師已指派至該診間");
 
         _db.TherapistRooms.Add(new TherapistRoom
         {

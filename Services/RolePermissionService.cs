@@ -56,7 +56,7 @@ public class RolePermissionService
         {
             var validCodes = permissions.Select(p => p.Code).ToHashSet();
             var invalidCodes = dto.PermissionCodes.Where(c => !validCodes.Contains(c)).ToList();
-            throw new InvalidOperationException($"無效的權限代碼：{string.Join(", ", invalidCodes)}");
+            throw new BusinessRuleException($"無效的權限代碼：{string.Join(", ", invalidCodes)}");
         }
 
         var beforePermissions = role.RolePermissions
