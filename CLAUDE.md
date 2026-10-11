@@ -267,6 +267,7 @@ AuditLog（不可刪除, changes 加密）
 - 資料庫表名/欄位用 snake_case：Model 上明確標註 `[Table("snake_name")]` 與 `[Column("snake_name")]`（專案未使用自動命名慣例）
 - 稽核觸發點在 Service 層呼叫 `IAuditService.LogAsync()`
 - 新功能與 bug 修正先寫測試；API 行為用 `Integration/` 的 `ConsulCoreApiFactory` + `ApiTestClient` 測
+- 錯誤以例外表達，由 `ErrorHandlingMiddleware` 對應狀態碼：`BusinessRuleException` → 400、`ForbiddenException` → 403、`KeyNotFoundException` → 404、`DbUpdateConcurrencyException` → 409，訊息會回給前端。**不要**用 `InvalidOperationException`（框架也會丟，訊息不外洩、回 500）或 `UnauthorizedAccessException`（401 = 登入失效，前端會登出；只用於登入失敗）
 - 資料存取保持 provider 中立（不寫 raw SQL、不指定資料庫型別名稱、decimal 用 `[Precision]`），規則見 `docs/database.md`
 
 ## 設定
@@ -303,3 +304,4 @@ bash tests/integration-test.sh   # 整合測試（需先 dotnet run；直接查 
 | 2026-08-15 | IDOR 改 fail-closed（新增 `Authorization/ActiveRoleScope`，以 JWT 驗證角色取代可偽造 header）；BR-20 代診/交接唯讀（放寬 ClientProfile 單筆 403、補 ClientMemo/FormSubmission 檢視稽核、FormSubmission 補權限閘）；`.claude/settings.json` 移出版控 |
 | 2026-10-11 | 資料庫改為 SQLite（EF Core 10），以 `Database:Provider` 保留正式環境改用 MySQL/MariaDB 的路徑；舊 MySQL migration 重建為 `Migrations/Sqlite/InitialCreate`；整合測試改查 SQLite。詳見 `docs/database.md` |
 | 2026-10-11 | 新增 xUnit 測試專案（單元 + WebApplicationFactory 整合測試）、GitHub Actions CI、TreatWarningsAsErrors |
+| 2026-10-11 | 重構 Phase 2：表單範本權限、擁有者保護、JWT 金鑰檢查、登入限流與失敗稽核、隨機初始密碼、收費冪等、時段樂觀併發（409）、例外對應整理（BusinessRuleException / ForbiddenException，模型驗證回 ApiResponse） |
