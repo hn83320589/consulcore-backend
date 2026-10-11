@@ -74,8 +74,8 @@ builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddHostedService<ScheduledMaintenanceService>();
 
 // JWT Authentication
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
-    ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
+var jwtSecretKey = JwtSecretKey.Validate(
+    builder.Configuration["Jwt:SecretKey"], builder.Environment.EnvironmentName);
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ConsulCore";
 
 builder.Services.AddAuthentication(options =>
