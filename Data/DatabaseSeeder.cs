@@ -6,11 +6,12 @@ namespace consulcore_backend.Data;
 
 public static class DatabaseSeeder
 {
+    /// <summary>
+    /// 依權限碼補上缺少的權限（可重複執行）：既有資料不修改、不刪除，
+    /// 讓之後新增的權限碼也能寫進既有資料庫。各機構角色的權限不在此調整（owner 可能已自訂）。
+    /// </summary>
     public static async Task SeedAsync(AppDbContext db)
     {
-        if (await db.Permissions.AnyAsync())
-            return;
-
         var permissions = new List<Permission>
         {
             new() { Code = Permissions.ClientView, Name = "檢視個案", Description = "檢視個案資料" },
@@ -47,7 +48,12 @@ public static class DatabaseSeeder
             new() { Code = Permissions.OrgSettings, Name = "機構設定", Description = "管理機構設定" },
         };
 
-        db.Permissions.AddRange(permissions);
+        var existing = (await db.Permissions.Select(p => p.Code).ToListAsync()).ToHashSet();
+        var missing = permissions.Where(p => !existing.Contains(p.Code)).ToList();
+        if (missing.Count == 0)
+            return;
+
+        db.Permissions.AddRange(missing);
         await db.SaveChangesAsync();
     }
 
