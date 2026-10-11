@@ -284,9 +284,12 @@
 | 擁有者保護：非 owner 不可指派 owner 角色、不可修改/重設密碼/停用 owner 帳號、不可調整系統角色權限 | ⚠️ 會出現**新的 403**，需調整 UI → 見 5 |
 | 非 Development 環境拒絕以 placeholder JWT 金鑰啟動 | **無**（部署設定） |
 | 個案初始密碼改為隨機，帳密只在 `POST /api/client-profiles` 回應的 `initialCredentials` 回傳一次；帳號尾碼改為隨機 | ✅ **前端已先完成**（`763b67a`：InitialCredentialsModal） |
+| `POST /api/billing/on-completed/{id}`：預約須為 completed（否則 400）；同一預約重複呼叫回傳既有收費單，不再重複扣次 | **目前無**：`billingService.onCompleted()` 有定義但沒有任何 store / 頁面呼叫；日後接上時，請只在預約完成後呼叫，並可安全重試 |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
 
-### 5. ⬜ 擁有者保護：新的 403 情境
+### 5. ✅ 擁有者保護：新的 403 情境
+
+> **前端已處理（`2a0e88c`）**：非 owner 時角色勾選不含 owner、擁有者那一列不顯示編輯 / 停用 / 重設密碼；權限矩陣原本就對系統角色唯讀。
 
 | 端點 | 何時 403 |
 |------|---------|

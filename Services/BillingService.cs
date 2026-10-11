@@ -27,6 +27,19 @@ public class BillingService
             .FirstOrDefaultAsync(a => a.Id == appointmentId)
             ?? throw new KeyNotFoundException("預約不存在");
 
+        if (apt.Status != AppointmentStatus.Completed)
+            throw new InvalidOperationException("只有已完成的預約可以產生收費");
+
+        // 冪等：同一筆預約只開一張單（雙擊、重試不可重複扣套餐或重複收費）。
+        // 退款後是否允許重新開單尚無業務規則，目前一律回傳既有那張。
+        var existing = await _db.PaymentRecords
+            .Where(r => r.AppointmentId == appointmentId)
+            .OrderBy(r => r.Id)
+            .Select(r => (int?)r.Id)
+            .FirstOrDefaultAsync();
+        if (existing.HasValue)
+            return await GetPaymentByIdAsync(existing.Value);
+
         // 1. 檢查是否有 active 套餐
         var clientPackage = await _db.ClientPackages
             .Include(cp => cp.Package)
