@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Unit & integration tests
+        run: dotnet test --no-build
+
+      # 端對端情境（tests/integration-test.sh）：對執行中的 API 跑，並直接查 SQLite 驗證加密
+      - name: Start API
+        run: |
+          export Encryption__Key="$(python3 -c 'import os,base64;print(base64.b64encode(os.urandom(32)).decode())')"
+          dotnet run --no-build --launch-profile http > api.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5037/api/health > /dev/null && exit 0
+            sleep 1
+          done
+          cat api.log
+          exit 1
+
+      - name: Scenario tests
+        run: bash tests/integration-test.sh
+
+      - name: API log on failure
+        if: failure()
+        run: cat api.log || true

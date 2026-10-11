@@ -1,0 +1,6 @@
+<Project>
+  <!-- 主專案與測試專案共用：目前 build 為 0 warning，警告一律視為錯誤以免回退 -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
