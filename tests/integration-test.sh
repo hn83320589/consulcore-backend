@@ -1,14 +1,12 @@
 #!/bin/bash
 # Sprint 8 — 整合測試腳本
 #
-# 連線資訊由環境變數提供（勿在腳本內寫死憑證）：
-#   BASE       API 位址（預設 http://localhost:5037）
-#   DB_HOST DB_PORT DB_USER DB_PASSWORD  加密驗證直接查 DB 用（必填）
-#   DB_NAME    資料庫名稱（預設 consulcore）
-#   MYSQL_BIN  mysql client 路徑（預設 mysql）
+# 設定由環境變數提供：
+#   BASE        API 位址（預設 http://localhost:5037）
+#   DB_PATH     API 使用的 SQLite 檔（預設 App_Data/consulcore.db），加密驗證直接查 DB 用
+#   SQLITE_BIN  sqlite3 路徑（預設 sqlite3）
 #
-# Usage:
-#   export DB_HOST=... DB_PORT=... DB_USER=... DB_PASSWORD=...
+# Usage（在專案根目錄、API 已用 dotnet run 啟動）:
 #   bash tests/integration-test.sh
 set -euo pipefail
 
@@ -16,13 +14,14 @@ BASE="${BASE:-http://localhost:5037}"
 PASS=0
 FAIL=0
 
-: "${DB_HOST:?請設定環境變數 DB_HOST}"
-: "${DB_PORT:?請設定環境變數 DB_PORT}"
-: "${DB_USER:?請設定環境變數 DB_USER}"
-: "${DB_PASSWORD:?請設定環境變數 DB_PASSWORD}"
-DB_NAME="${DB_NAME:-consulcore}"
-MYSQL_BIN="${MYSQL_BIN:-mysql}"
-MYSQL="$MYSQL_BIN -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME -N -e"
+DB_PATH="${DB_PATH:-App_Data/consulcore.db}"
+SQLITE_BIN="${SQLITE_BIN:-sqlite3}"
+# 先確認檔案存在：sqlite3 開不存在的路徑會默默建一個空 DB，查詢錯誤又被 2>/dev/null 吞掉
+if [ ! -f "$DB_PATH" ]; then
+  echo "找不到 SQLite 資料庫：$DB_PATH（請先 dotnet run，或設定 DB_PATH）" >&2
+  exit 1
+fi
+DBQ="$SQLITE_BIN -noheader $DB_PATH"
 
 # Helpers
 api() { curl -s "$BASE$1" "${@:2}"; }
@@ -476,7 +475,7 @@ echo "========================================"
 
 # Check ClientProfile.name is encrypted
 echo "--- Encrypted fields in DB ---"
-RAW_NAME=$($MYSQL "SELECT name FROM client_profiles LIMIT 1" 2>/dev/null)
+RAW_NAME=$($DBQ "SELECT name FROM client_profiles LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_NAME" | python3 -c "
 import sys
 val = sys.stdin.read().strip()
@@ -485,43 +484,43 @@ print('yes' if len(val) > 30 and not any(c in val for c in '小明張李王陳�
 ")
 assert "ClientProfile.name encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_SOAP=$($MYSQL "SELECT soap_s FROM session_notes LIMIT 1" 2>/dev/null)
+RAW_SOAP=$($DBQ "SELECT soap_s FROM session_notes LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_SOAP" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 50 else 'no')
 ")
 assert "SessionNote.soap_s encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_CONSENT=$($MYSQL "SELECT content_snapshot FROM consent_records LIMIT 1" 2>/dev/null)
+RAW_CONSENT=$($DBQ "SELECT content_snapshot FROM consent_records LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_CONSENT" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 50 else 'no')
 ")
 assert "ConsentRecord.content_snapshot encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_MEMO=$($MYSQL "SELECT content FROM client_memos LIMIT 1" 2>/dev/null)
+RAW_MEMO=$($DBQ "SELECT content FROM client_memos LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_MEMO" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 50 else 'no')
 ")
 assert "ClientMemo.content encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_FV=$($MYSQL "SELECT value FROM form_field_values LIMIT 1" 2>/dev/null)
+RAW_FV=$($DBQ "SELECT value FROM form_field_values LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_FV" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 30 else 'no')
 ")
 assert "FormFieldValue.value encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_AUDIT=$($MYSQL "SELECT changes FROM audit_logs WHERE changes IS NOT NULL LIMIT 1" 2>/dev/null)
+RAW_AUDIT=$($DBQ "SELECT changes FROM audit_logs WHERE changes IS NOT NULL LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_AUDIT" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 30 and val[0] not in '{[' else 'no')
 ")
 assert "AuditLog.changes encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_PERF=$($MYSQL "SELECT comment FROM performance_reviews WHERE comment IS NOT NULL LIMIT 1" 2>/dev/null)
+RAW_PERF=$($DBQ "SELECT comment FROM performance_reviews WHERE comment IS NOT NULL LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_PERF" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 30 and not any(c in val for c in '整體表現良好個案回饋佳') else 'no')
 ")
 assert "PerformanceReview.comment encrypted" "$IS_ENCRYPTED" "yes"
 
-RAW_VIO=$($MYSQL "SELECT description FROM violation_records WHERE description IS NOT NULL LIMIT 1" 2>/dev/null)
+RAW_VIO=$($DBQ "SELECT description FROM violation_records WHERE description IS NOT NULL LIMIT 1" 2>/dev/null)
 IS_ENCRYPTED=$(echo "$RAW_VIO" | python3 -c "
 import sys; val = sys.stdin.read().strip(); print('yes' if len(val) > 30 and not any(c in val for c in '遲交晤談紀錄') else 'no')
 ")
@@ -574,7 +573,7 @@ api "/api/session-notes/$NOTE_ID/unlock" -X POST -H "Authorization: Bearer $THER
 api "/api/session-notes/$NOTE_ID" -X PUT -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: therapist" \
   -H "Content-Type: application/json" -d '{"soapS":"更新：壓力來自工作"}' > /dev/null
 api "/api/session-notes/$NOTE_ID/lock" -X POST -H "Authorization: Bearer $THER_TOKEN" -H "X-Active-Role: therapist" > /dev/null
-AUDIT_UNLOCK=$($MYSQL "SELECT COUNT(*) FROM audit_logs WHERE action='unlock' AND resource_type='session_note'" 2>/dev/null)
+AUDIT_UNLOCK=$($DBQ "SELECT COUNT(*) FROM audit_logs WHERE action='unlock' AND resource_type='session_note'" 2>/dev/null)
 assert "Unlock audit logged" "$([ "$AUDIT_UNLOCK" -ge 1 ] && echo yes || echo no)" "yes"
 
 # E4: Re-expand doesn't overwrite
