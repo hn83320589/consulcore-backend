@@ -4,6 +4,7 @@ using consulcore_backend.Models;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace consulcore_backend.Controllers;
 
@@ -69,31 +70,31 @@ public class PerformanceReviewsController : ControllerBase
     [HttpGet("metrics/{therapistUserId}")]
     [Authorize(Policy = Policies.CanViewPerformance)]
     public async Task<IActionResult> GetMetrics(int therapistUserId,
-        [FromQuery] string startDate, [FromQuery] string endDate)
+        [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate)
     {
         var metrics = await _service.GetMetricsAsync(
-            therapistUserId, DateOnly.Parse(startDate), DateOnly.Parse(endDate));
+            therapistUserId, startDate, endDate);
         return Ok(ApiResponse<TherapistMetricsDto>.Ok(metrics));
     }
 
     [HttpGet("metrics/{therapistUserId}/trend")]
     [Authorize(Policy = Policies.CanViewPerformance)]
     public async Task<IActionResult> GetMetricsTrend(int therapistUserId,
-        [FromQuery] string metric, [FromQuery] string startDate, [FromQuery] string endDate,
+        [FromQuery] string metric, [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate,
         [FromQuery] string interval = "month")
     {
         var trend = await _service.GetMetricsTrendAsync(
-            therapistUserId, metric, DateOnly.Parse(startDate), DateOnly.Parse(endDate));
+            therapistUserId, metric, startDate, endDate);
         return Ok(ApiResponse<MetricsTrendDto>.Ok(trend));
     }
 
     [HttpGet("metrics-comparison")]
     [Authorize(Policy = Policies.CanManagePerformance)]
     public async Task<IActionResult> GetComparison(
-        [FromQuery] string startDate, [FromQuery] string endDate)
+        [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate)
     {
         var metrics = await _service.GetMetricsComparisonAsync(
-            DateOnly.Parse(startDate), DateOnly.Parse(endDate));
+            startDate, endDate);
         return Ok(ApiResponse<List<TherapistMetricsDto>>.Ok(metrics));
     }
 }

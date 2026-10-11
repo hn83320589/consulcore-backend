@@ -1,3 +1,4 @@
+using consulcore_backend.Exceptions;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ConsentRecord;
 using consulcore_backend.Models;
@@ -68,7 +69,7 @@ public class ConsentRecordsController : ControllerBase
         {
             var own = await CurrentClientProfileIdAsync();
             if (own == null || clientProfileId != own)
-                return StatusCode(403, ApiResponse<object>.Fail("無權存取其他個案的同意書"));
+                throw new ForbiddenException("無權存取其他個案的同意書");
         }
 
         var records = await _consentService.GetRecordsByClientAsync(clientProfileId);
@@ -81,7 +82,7 @@ public class ConsentRecordsController : ControllerBase
     {
         // 依觸發事件跨個案瀏覽為 staff 視圖，非 staff 身份無權存取
         if (!ActingAsVerifiedNonClient())
-            return StatusCode(403, ApiResponse<object>.Fail("無權存取此清單"));
+            throw new ForbiddenException("無權存取此清單");
 
         var records = await _consentService.GetRecordsByTriggerEventAsync(triggerEvent);
         return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));

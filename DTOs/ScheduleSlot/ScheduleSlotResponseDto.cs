@@ -16,8 +16,8 @@ public class ScheduleSlotResponseDto
 
 public class ExpandScheduleDto
 {
-    public string StartDate { get; set; } = string.Empty; // "2026-04-07"
-    public string EndDate { get; set; } = string.Empty;   // "2026-04-30"
+    public DateOnly StartDate { get; set; } // "2026-04-07"
+    public DateOnly EndDate { get; set; }   // "2026-04-30"
 }
 
 public class ManualExpandDto
