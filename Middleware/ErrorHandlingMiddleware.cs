@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using consulcore_backend.Exceptions;
 using consulcore_backend.Models;
 
 namespace consulcore_backend.Middleware;
@@ -40,6 +41,7 @@ public class ErrorHandlingMiddleware
         // 依例外型別對應 HTTP 狀態碼；業務例外的訊息可安全回傳給前端
         var (statusCode, exposeMessage) = exception switch
         {
+            ForbiddenException => (HttpStatusCode.Forbidden, true),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, true),
             KeyNotFoundException => (HttpStatusCode.NotFound, true),
             ArgumentException => (HttpStatusCode.BadRequest, true),

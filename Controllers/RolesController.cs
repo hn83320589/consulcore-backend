@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Role;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -28,7 +29,8 @@ public class RolesController : ControllerBase
     [HttpPut("{id}/permissions")]
     public async Task<IActionResult> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsDto dto)
     {
-        var role = await _rolePermissionService.UpdateRolePermissionsAsync(id, dto);
+        var actingAsOwner = ActiveRoleScope.ActingAsVerified(Request, User, "owner");
+        var role = await _rolePermissionService.UpdateRolePermissionsAsync(id, dto, actingAsOwner);
         return Ok(ApiResponse<RoleResponseDto>.Ok(role, "權限已更新"));
     }
 }

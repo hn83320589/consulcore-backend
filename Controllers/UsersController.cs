@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.User;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -18,6 +19,8 @@ public class UsersController : ControllerBase
         _userService = userService;
     }
 
+    private bool ActingAsOwner => ActiveRoleScope.ActingAsVerified(Request, User, "owner");
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -36,14 +39,14 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
-        var user = await _userService.CreateAsync(dto, orgId);
+        var user = await _userService.CreateAsync(dto, orgId, ActingAsOwner);
         return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已建立"));
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserDto dto)
     {
-        var user = await _userService.UpdateAsync(id, dto);
+        var user = await _userService.UpdateAsync(id, dto, ActingAsOwner);
         return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已更新"));
     }
 
@@ -57,14 +60,14 @@ public class UsersController : ControllerBase
     [HttpPost("{id}/reset-password")]
     public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordDto dto)
     {
-        await _userService.ResetPasswordAsync(id, dto);
+        await _userService.ResetPasswordAsync(id, dto, ActingAsOwner);
         return Ok(ApiResponse<object>.Ok(new { }, "密碼已重設"));
     }
 
     [HttpPatch("{id}/toggle-active")]
     public async Task<IActionResult> ToggleActive(int id)
     {
-        var user = await _userService.ToggleActiveAsync(id);
+        var user = await _userService.ToggleActiveAsync(id, ActingAsOwner);
         return Ok(ApiResponse<UserResponseDto>.Ok(user));
     }
 }

@@ -271,3 +271,30 @@
   但尚未在有 DB 的環境完整跑過，後端會補驗。
 - 寫入授權目前維持「紀錄建立者本人」——即**交接後的新心理師無法編輯前手留下的紀錄**（只能另寫新紀錄）。
   若實務上需要「目前指派心理師可編輯」，屬另一個決策，前端若有相關需求請提出。
+
+---
+
+# 2026-10-11 批次（重構 Phase 2：資安修補）
+
+處理完請在項目標 ✅ 並註明處理方式。
+
+| 異動 | 對前端影響 |
+|------|-----------|
+| `/api/form-templates` 補權限閘 | **無**（只有 OrgSettingView 使用，選單已以 `org.settings` 控制） |
+| 擁有者保護：非 owner 不可指派 owner 角色、不可修改/重設密碼/停用 owner 帳號、不可調整系統角色權限 | ⚠️ 會出現**新的 403**，需調整 UI → 見 5 |
+| 非 Development 環境拒絕以 placeholder JWT 金鑰啟動 | **無**（部署設定） |
+
+### 5. ⬜ 擁有者保護：新的 403 情境
+
+| 端點 | 何時 403 |
+|------|---------|
+| `POST /api/users`、`PUT /api/users/{id}` | 非 owner 身份送出的 `roles` 含 `"owner"` |
+| `PUT /api/users/{id}`、`POST /api/users/{id}/reset-password`、`PATCH /api/users/{id}/toggle-active` | 非 owner 身份操作擁有者帳號 |
+| `PUT /api/roles/{id}/permissions` | 非 owner 身份修改系統角色（`isSystemDefault=true`，目前所有角色皆是） |
+
+「owner 身份」= `X-Active-Role: owner` 且 JWT `roles` 內確實有 owner。403 回應為 `ApiResponse`，`message` 可直接顯示。
+
+**建議前端調整**（StaffManageView）：
+- 非 owner 時，角色下拉不提供 `owner` 選項
+- 非 owner 時，擁有者那一列不顯示編輯 / 重設密碼 / 停用按鈕
+- 非 owner 時，權限矩陣改為唯讀

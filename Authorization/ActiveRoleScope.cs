@@ -39,4 +39,11 @@ public static class ActiveRoleScope
         if (string.IsNullOrEmpty(role) || role == "client") return false;
         return JwtRoles(user).Contains(role);
     }
+
+    /// <summary>請求是否以指定角色發出，且該角色確實存在於 JWT roles。</summary>
+    public static bool ActingAsVerified(HttpRequest request, ClaimsPrincipal user, string role)
+    {
+        return request.Headers["X-Active-Role"].FirstOrDefault() == role
+            && JwtRoles(user).Contains(role);
+    }
 }
