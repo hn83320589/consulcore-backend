@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace consulcore_backend.Models;
 
@@ -31,7 +32,8 @@ public class FeeSchedule
     [Column("therapist_user_id")]
     public int? TherapistUserId { get; set; }
 
-    [Column("amount", TypeName = "decimal(10,2)")]
+    [Column("amount")]
+    [Precision(10, 2)]
     public decimal Amount { get; set; }
 
     [Required]

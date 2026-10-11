@@ -9,6 +9,11 @@ appsettings.*.local.json
 .env
 *.user
 
+# === 本機 SQLite 資料庫（內含加密個資，不可進版控）===
+*.db
+*.db-shm
+*.db-wal
+
 # === Claude Code 個人設定（本機權限/hook，不提交）===
 .claude/settings.json
 .claude/settings.local.json

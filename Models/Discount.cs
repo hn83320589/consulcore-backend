@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace consulcore_backend.Models;
 
@@ -27,10 +28,12 @@ public class Discount
     [Column("discount_type")]
     public string DiscountType { get; set; } = DiscountTypes.Percentage;
 
-    [Column("percentage_value", TypeName = "decimal(5,2)")]
+    [Column("percentage_value")]
+    [Precision(5, 2)]
     public decimal? PercentageValue { get; set; }
 
-    [Column("fixed_amount", TypeName = "decimal(10,2)")]
+    [Column("fixed_amount")]
+    [Precision(10, 2)]
     public decimal? FixedAmount { get; set; }
 
     [MaxLength(50)]

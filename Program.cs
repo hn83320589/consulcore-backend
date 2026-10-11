@@ -32,13 +32,16 @@ builder.Services.AddHttpContextAccessor();
 // Encryption
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
-// DbContext
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// DbContext — provider 由 Database:Provider 決定，見 docs/database.md
+var connectionString = DatabaseProvider.ResolveConnectionString(
+    builder.Configuration["Database:Provider"],
+    builder.Configuration.GetConnectionString("DefaultConnection"),
+    builder.Environment.ContentRootPath);
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     if (!string.IsNullOrEmpty(connectionString))
     {
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        options.UseSqlite(connectionString);
     }
 });
 

@@ -1,6 +1,6 @@
 # 諮心管理 ConsulCore — Backend
 
-> .NET 10 Web API | Phase 1 | 最後更新 2026-04-03
+> .NET 10 Web API | Phase 1
 
 ---
 
@@ -15,8 +15,8 @@
 | 項目 | 技術 | 版本 |
 |------|------|------|
 | 框架 | C# .NET Core Web API | 10.0 |
-| ORM | Entity Framework Core + Pomelo MySQL | 10.x |
-| 資料庫 | MySQL / MariaDB | 8.x+ |
+| ORM | Entity Framework Core | 10.0 |
+| 資料庫 | SQLite（開發）；正式環境預留 MySQL / MariaDB | — |
 | 認證 | JWT Bearer Token (HS256) | — |
 | 密碼 | BCrypt.Net-Next | — |
 | API 文件 | Swagger / Swashbuckle | — |
@@ -41,6 +41,9 @@ consulcore-backend/
 ├── Authorization/         # Policy-based 權限
 ├── Middleware/
 │   └── ErrorHandlingMiddleware.cs
+├── tests/
+│   ├── ConsulCore.Tests/   # xUnit：Unit/ 純邏輯、Integration/ 以暫存 SQLite 起完整 API
+│   └── integration-test.sh # 對執行中 API 的端對端情境（CI 也會跑）
 ├── Program.cs
 └── appsettings.json
 ```
@@ -77,7 +80,7 @@ public class EncryptedStringConverter : ValueConverter<string, string>
 // OnModelCreating 中自動套用所有標記 [Encrypted] 的 Property
 ```
 
-演算法：AES-256-GCM。密鑰從環境變數 `ENCRYPTION_KEY` 讀取，不寫在 appsettings.json。
+演算法：AES-256-GCM。密鑰從設定鍵 `Encryption:Key` 讀取（環境變數 `Encryption__Key`），不寫在 appsettings.json。
 
 ### 3. 權限檢查
 
@@ -106,7 +109,7 @@ JWT Payload 包含所有角色，前端選擇 activeRole 後透過 Header 告知
 
 ```
 JWT Claims: { userId, organizationId, roles: ["therapist","client"], username, mustChangePassword }
-Request Headers: X-Active-Role: therapist, X-Organization-Id: 1
+Request Headers: X-Active-Role: therapist   （organizationId 只從 JWT 取，不收 header）
 ```
 
 `mustChangePassword=true`（個案首次登入預設密碼）時，`MustChangePasswordMiddleware`
@@ -154,7 +157,7 @@ public class ApiResponse<T>
 
 ---
 
-## 資料模型（31 張表）
+## 資料模型（36 張表）
 
 ### 帳號與組織（6）
 Organization, User, UserRole, Role, Permission, RolePermission
@@ -261,30 +264,34 @@ AuditLog（不可刪除, changes 加密）
 - Enum 用 string 儲存（`.HasConversion<string>()`）
 - Enum 欄位必須有預設值，不允許 null
 - API 路由用 kebab-case
-- 資料庫欄位用 snake_case（EF Core `.ToSnakeCase()`）
+- 資料庫表名/欄位用 snake_case：Model 上明確標註 `[Table("snake_name")]` 與 `[Column("snake_name")]`（專案未使用自動命名慣例）
 - 稽核觸發點在 Service 層呼叫 `IAuditService.LogAsync()`
+- 新功能與 bug 修正先寫測試；API 行為用 `Integration/` 的 `ConsulCoreApiFactory` + `ApiTestClient` 測
+- 資料存取保持 provider 中立（不寫 raw SQL、不指定資料庫型別名稱、decimal 用 `[Precision]`），規則見 `docs/database.md`
 
 ## 設定
 
 ```json
 {
-  "ConnectionStrings": { "DefaultConnection": "" },
+  "Database": { "Provider": "Sqlite" },
+  "ConnectionStrings": { "DefaultConnection": "Data Source=App_Data/consulcore.db" },
   "Jwt": { "SecretKey": "", "Issuer": "ConsulCore", "ExpiryHours": 24 },
   "Encryption": { "Key": "" },
   "AllowedOrigins": ["http://localhost:5173"]
 }
 ```
 
-實際密鑰透過環境變數注入，不寫在設定檔。
+SQLite 連線字串不是機密，直接寫在 `appsettings.json`；`Jwt:SecretKey`、`Encryption:Key` 透過環境變數或 gitignored 的 `appsettings.Development.json` 注入。
 
 ## 常用指令
 
 ```bash
 dotnet run                       # 啟動 API (http://localhost:5037)
-dotnet ef migrations add <name>  # 新增 migration
+dotnet ef migrations add <name> -o Migrations/Sqlite  # 新增 migration
 dotnet ef database update        # 更新資料庫
-dotnet build                     # 建置
-dotnet test                      # 測試
+dotnet build                     # 建置（警告視為錯誤）
+dotnet test                      # 單元 + API 整合測試（tests/ConsulCore.Tests）
+bash tests/integration-test.sh   # 整合測試（需先 dotnet run；直接查 App_Data/consulcore.db 驗證加密）
 ```
 
 ## 最新異動記錄
@@ -294,3 +301,5 @@ dotnet test                      # 測試
 | 2026-04-03 | 初始版本，Phase 1 完整架構 |
 | 2026-07-30 | 稽核修復（安全/通知/排程/正確性）；修復 X-Active-Role 偽造提權；新增 MustChangePasswordMiddleware 與 ScheduledMaintenanceService；Discount 改 therapist 層級（+TherapistUserId 可空）；通知 Seeder 補至 24 筆（8 event×3 channel）；稽核新增 PDF 匯出；密鑰移出版控；新增前端介接文件 `docs/frontend-integration.md` 與 `SECURITY.md` |
 | 2026-08-15 | IDOR 改 fail-closed（新增 `Authorization/ActiveRoleScope`，以 JWT 驗證角色取代可偽造 header）；BR-20 代診/交接唯讀（放寬 ClientProfile 單筆 403、補 ClientMemo/FormSubmission 檢視稽核、FormSubmission 補權限閘）；`.claude/settings.json` 移出版控 |
+| 2026-10-11 | 資料庫改為 SQLite（EF Core 10），以 `Database:Provider` 保留正式環境改用 MySQL/MariaDB 的路徑；舊 MySQL migration 重建為 `Migrations/Sqlite/InitialCreate`；整合測試改查 SQLite。詳見 `docs/database.md` |
+| 2026-10-11 | 新增 xUnit 測試專案（單元 + WebApplicationFactory 整合測試）、GitHub Actions CI、TreatWarningsAsErrors |
