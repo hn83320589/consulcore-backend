@@ -240,7 +240,7 @@ public class AuthService
             ?? throw new InvalidOperationException("使用者不存在");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
-            throw new UnauthorizedAccessException("目前密碼錯誤");
+            throw new InvalidOperationException("目前密碼錯誤"); // 已登入的輸入錯誤 → 400，不是認證失敗
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         user.UpdatedAt = DateTime.UtcNow;

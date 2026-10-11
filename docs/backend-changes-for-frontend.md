@@ -285,7 +285,8 @@
 | 非 Development 環境拒絕以 placeholder JWT 金鑰啟動 | **無**（部署設定） |
 | 個案初始密碼改為隨機，帳密只在 `POST /api/client-profiles` 回應的 `initialCredentials` 回傳一次；帳號尾碼改為隨機 | ✅ **前端已先完成**（`763b67a`：InitialCredentialsModal） |
 | `POST /api/billing/on-completed/{id}`：預約須為 completed（否則 400）；同一預約重複呼叫回傳既有收費單，不再重複扣次 | **目前無**：`billingService.onCompleted()` 有定義但沒有任何 store / 頁面呼叫；日後接上時，請只在預約完成後呼叫，並可安全重試 |
-| 同一時段被同時預約：後寫者回 **409**（`ApiResponse`，訊息可直接顯示）；其他併發寫入衝突同樣回 409 | ⚠️ `httpService` 需對 409 顯示訊息（原本只處理 400/403/404/5xx） |
+| 同一時段被同時預約：後寫者回 **409**（`ApiResponse`，訊息可直接顯示）；其他併發寫入衝突同樣回 409 | ✅ 前端已處理（`34ad953`：httpService 對 409 顯示訊息） |
+| 「非建立者」編輯/刪除/鎖定晤談紀錄、備忘、常用語：**401 → 403**；改密碼時目前密碼錯誤：**401 → 400** | **無**：前端 F3（`f099d77`）已先相容，兩者都只顯示訊息、不登出 |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
 
 ### 5. ✅ 擁有者保護：新的 403 情境
