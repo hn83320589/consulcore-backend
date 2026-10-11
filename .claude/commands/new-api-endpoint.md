@@ -49,7 +49,7 @@ public class ResourceNameController : ControllerBase
 永遠使用 `ApiResponse<T>` 包裝：
 
 ```csharp
-return Ok(ApiResponse<T>.Success(data, "操作成功"));
+return Ok(ApiResponse<T>.Ok(data, "操作成功"));
 return NotFound(ApiResponse<T>.Fail("找不到資源"));
 return BadRequest(ApiResponse<T>.Fail("驗證失敗", errors));
 ```
@@ -71,4 +71,4 @@ return BadRequest(ApiResponse<T>.Fail("驗證失敗", errors));
 - [ ] 需認證端點加 [Authorize] 或 [Authorize(Policy = "...")]
 - [ ] 回傳統一用 ApiResponse<T>
 - [ ] Service 層處理業務邏輯，Controller 不含邏輯
-- [ ] 新增/更新/刪除操作在 Service 中觸發稽核 Log
+- [ ] 新增/更新/刪除操作，以及敏感資料的檢視，在 Service 中觸發稽核 Log

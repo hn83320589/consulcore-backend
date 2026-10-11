@@ -1,6 +1,6 @@
 # 諮心管理 ConsulCore — Backend
 
-> .NET 10 Web API | Phase 1 | 最後更新 2026-04-03
+> .NET 10 Web API | Phase 1
 
 ---
 
@@ -77,7 +77,7 @@ public class EncryptedStringConverter : ValueConverter<string, string>
 // OnModelCreating 中自動套用所有標記 [Encrypted] 的 Property
 ```
 
-演算法：AES-256-GCM。密鑰從環境變數 `ENCRYPTION_KEY` 讀取，不寫在 appsettings.json。
+演算法：AES-256-GCM。密鑰從設定鍵 `Encryption:Key` 讀取（環境變數 `Encryption__Key`），不寫在 appsettings.json。
 
 ### 3. 權限檢查
 
@@ -106,7 +106,7 @@ JWT Payload 包含所有角色，前端選擇 activeRole 後透過 Header 告知
 
 ```
 JWT Claims: { userId, organizationId, roles: ["therapist","client"], username, mustChangePassword }
-Request Headers: X-Active-Role: therapist, X-Organization-Id: 1
+Request Headers: X-Active-Role: therapist   （organizationId 只從 JWT 取，不收 header）
 ```
 
 `mustChangePassword=true`（個案首次登入預設密碼）時，`MustChangePasswordMiddleware`
@@ -154,7 +154,7 @@ public class ApiResponse<T>
 
 ---
 
-## 資料模型（31 張表）
+## 資料模型（36 張表）
 
 ### 帳號與組織（6）
 Organization, User, UserRole, Role, Permission, RolePermission
@@ -261,7 +261,7 @@ AuditLog（不可刪除, changes 加密）
 - Enum 用 string 儲存（`.HasConversion<string>()`）
 - Enum 欄位必須有預設值，不允許 null
 - API 路由用 kebab-case
-- 資料庫欄位用 snake_case（EF Core `.ToSnakeCase()`）
+- 資料庫表名/欄位用 snake_case：Model 上明確標註 `[Table("snake_name")]` 與 `[Column("snake_name")]`（專案未使用自動命名慣例）
 - 稽核觸發點在 Service 層呼叫 `IAuditService.LogAsync()`
 
 ## 設定
@@ -284,7 +284,7 @@ dotnet run                       # 啟動 API (http://localhost:5037)
 dotnet ef migrations add <name>  # 新增 migration
 dotnet ef database update        # 更新資料庫
 dotnet build                     # 建置
-dotnet test                      # 測試
+bash tests/integration-test.sh   # 整合測試（需先 dotnet run，並設定 DB_HOST/DB_PORT/DB_USER/DB_PASSWORD）
 ```
 
 ## 最新異動記錄
