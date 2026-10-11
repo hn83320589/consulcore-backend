@@ -283,6 +283,7 @@
 | `/api/form-templates` 補權限閘 | **無**（只有 OrgSettingView 使用，選單已以 `org.settings` 控制） |
 | 擁有者保護：非 owner 不可指派 owner 角色、不可修改/重設密碼/停用 owner 帳號、不可調整系統角色權限 | ⚠️ 會出現**新的 403**，需調整 UI → 見 5 |
 | 非 Development 環境拒絕以 placeholder JWT 金鑰啟動 | **無**（部署設定） |
+| 個案初始密碼改為隨機，帳密只在 `POST /api/client-profiles` 回應的 `initialCredentials` 回傳一次；帳號尾碼改為隨機 | ✅ **前端已先完成**（`763b67a`：InitialCredentialsModal） |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
 
 ### 5. ⬜ 擁有者保護：新的 403 情境

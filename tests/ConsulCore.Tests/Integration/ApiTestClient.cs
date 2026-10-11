@@ -42,33 +42,33 @@ public class ApiTestClient(HttpClient http)
     public async Task<string> LoginTokenAsync(string username, string password) =>
         (await LoginAsync(username, password)).GetProperty("token").GetString()!;
 
-    /// <summary>預設密碼規則：身分證後 4 碼 + 生日 MMDD（對應下方建立個案時的資料）。</summary>
-    public const string ClientDefaultPassword = "67890615";
+    public record ClientCredentials(int ClientProfileId, string Username, string Password);
 
-    /// <summary>建立附帳號的個案，回傳其登入帳號（尚未改密碼）。</summary>
-    public async Task<string> CreateClientAccountAsync(string ownerToken)
+    /// <summary>建立附帳號的個案，回傳建立時一次性提供的帳號與初始密碼（尚未改密碼）。</summary>
+    public async Task<ClientCredentials> CreateClientAccountAsync(string ownerToken)
     {
-        await PostOkAsync(ownerToken, "owner", "/api/client-profiles", new
+        var client = await PostOkAsync(ownerToken, "owner", "/api/client-profiles", new
         {
             name = "測試個案",
             idNumber = "A123456789",
             dateOfBirth = "1995-06-15",
             createAccount = true,
         });
-        var users = await ReadDataAsync(await SendAsync(HttpMethod.Get, "/api/users", ownerToken, "owner"));
-        return users.EnumerateArray()
-            .Last(u => u.GetProperty("roles").EnumerateArray().Any(r => r.GetString() == "client"))
-            .GetProperty("username").GetString()!;
+        var credentials = client.GetProperty("initialCredentials");
+        return new ClientCredentials(
+            client.GetProperty("id").GetInt32(),
+            credentials.GetProperty("username").GetString()!,
+            credentials.GetProperty("password").GetString()!);
     }
 
     /// <summary>建立個案帳號並完成首次改密碼，回傳可正常使用的個案 token。</summary>
     public async Task<string> CreateActiveClientTokenAsync(string ownerToken)
     {
-        var username = await CreateClientAccountAsync(ownerToken);
-        var firstToken = await LoginTokenAsync(username, ClientDefaultPassword);
+        var account = await CreateClientAccountAsync(ownerToken);
+        var firstToken = await LoginTokenAsync(account.Username, account.Password);
         await ReadDataAsync(await SendAsync(HttpMethod.Put, "/api/auth/change-password", firstToken, "client",
-            new { currentPassword = ClientDefaultPassword, newPassword = "NewPass123!" }));
-        return await LoginTokenAsync(username, "NewPass123!");
+            new { currentPassword = account.Password, newPassword = "NewPass123!" }));
+        return await LoginTokenAsync(account.Username, "NewPass123!");
     }
 
     public async Task<HttpResponseMessage> SendAsync(

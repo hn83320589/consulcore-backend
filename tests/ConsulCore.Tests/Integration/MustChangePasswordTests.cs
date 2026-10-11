@@ -11,8 +11,8 @@ public class MustChangePasswordTests(ConsulCoreApiFactory factory) : IClassFixtu
     public async Task Client_must_change_default_password_before_using_other_endpoints()
     {
         var ownerToken = await _api.RegisterOrganizationAsync("mcp1 診所", "mcp1_owner");
-        var username = await _api.CreateClientAccountAsync(ownerToken);
-        var login = await _api.LoginAsync(username, ApiTestClient.ClientDefaultPassword);
+        var account = await _api.CreateClientAccountAsync(ownerToken);
+        var login = await _api.LoginAsync(account.Username, account.Password);
         var token = login.GetProperty("token").GetString()!;
 
         var blocked = await _api.SendAsync(HttpMethod.Get, "/api/notifications", token, "client");

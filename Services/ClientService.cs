@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ClientProfile;
 using consulcore_backend.Models;
@@ -96,10 +97,11 @@ public class ClientService
             Status = ClientStatus.Active,
         };
 
+        InitialCredentialsDto? initialCredentials = null;
         if (dto.CreateAccount)
         {
-            var defaultPassword = GenerateDefaultPassword(dto.IdNumber, dto.DateOfBirth);
-            var username = GenerateClientUsername(dto.Name, orgId);
+            var initialPassword = GenerateInitialPassword();
+            var username = GenerateClientUsername(orgId);
 
             // 檢查 username 是否已存在
             var usernameExists = await _db.Users
@@ -113,7 +115,7 @@ public class ClientService
                 OrganizationId = orgId,
                 Username = username,
                 Email = dto.Email ?? $"{username}@placeholder.local",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(initialPassword),
                 DisplayName = dto.Name,
                 Phone = dto.Phone,
             };
@@ -127,6 +129,7 @@ public class ClientService
 
             client.UserId = user.Id;
             client.MustChangePassword = true;
+            initialCredentials = new InitialCredentialsDto { Username = username, Password = initialPassword };
         }
 
         _db.ClientProfiles.Add(client);
@@ -153,7 +156,9 @@ public class ClientService
             await _notify.SendAsync(NotificationEventType.AccountCreated, client.UserId.Value, "client", orgId, vars);
         }
 
-        return await GetByIdAsync(client.Id);
+        var created = await GetByIdAsync(client.Id);
+        created.InitialCredentials = initialCredentials;
+        return created;
     }
 
     public async Task<ClientProfileResponseDto> UpdateAsync(int id, UpdateClientProfileDto dto)
@@ -340,26 +345,18 @@ public class ClientService
         return clients.Select(MapToDto).ToList();
     }
 
-    private static string GenerateDefaultPassword(string? idNumber, string? dateOfBirth)
-    {
-        // 預設密碼：身分證後4碼 + 生日MMDD
-        var idLast4 = !string.IsNullOrEmpty(idNumber) && idNumber.Length >= 4
-            ? idNumber[^4..] : "0000";
+    // 初始密碼隨機產生（原本由身分證後 4 碼 + 生日組成，知道個案基本資料就能登入）。
+    // 去掉 0/O、1/l/I 等易混淆字元，方便櫃檯口頭或紙本交付；個案首次登入須改密碼。
+    private const string InitialPasswordAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
-        var mmdd = "0101";
-        if (!string.IsNullOrEmpty(dateOfBirth) && DateTime.TryParse(dateOfBirth, out var dob))
-        {
-            mmdd = dob.ToString("MMdd");
-        }
+    private static string GenerateInitialPassword() =>
+        RandomNumberGenerator.GetString(InitialPasswordAlphabet, 10);
 
-        return $"{idLast4}{mmdd}";
-    }
+    // 帳號用隨機尾碼：原本的秒級時間戳可被猜出，且同一秒建立兩位個案會撞名
+    private const string UsernameSuffixAlphabet = "abcdefghjkmnpqrstuvwxyz23456789";
 
-    private string GenerateClientUsername(string name, int orgId)
-    {
-        // 產生 client_orgId_timestamp 格式的 username
-        return $"client_{orgId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-    }
+    private static string GenerateClientUsername(int orgId) =>
+        $"client_{orgId}_{RandomNumberGenerator.GetString(UsernameSuffixAlphabet, 8)}";
 
     private static ClientProfileResponseDto MapToDto(Models.ClientProfile client)
     {
