@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Billing;
 using consulcore_backend.DTOs.Report;
 using consulcore_backend.Models;
@@ -9,7 +10,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/reports")]
-[Authorize(Policy = "CanViewBilling")]
+[Authorize(Policy = Policies.CanViewBilling)]
 public class ReportsController : ControllerBase
 {
     private readonly ReportService _reportService;

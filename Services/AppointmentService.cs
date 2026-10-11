@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Appointment;
 using consulcore_backend.Exceptions;
@@ -73,8 +74,8 @@ public class AppointmentService
             ["time"] = slot.StartTime.ToString("HH:mm"),
         };
         if (client?.UserId != null)
-            await _notify.SendAsync(NotificationEventType.AppointmentCreated, client.UserId.Value, "client", appointment.OrganizationId, vars);
-        await _notify.SendAsync(NotificationEventType.AppointmentCreated, slot.TherapistUserId, "therapist", appointment.OrganizationId, vars);
+            await _notify.SendAsync(NotificationEventType.AppointmentCreated, client.UserId.Value, Roles.Client, appointment.OrganizationId, vars);
+        await _notify.SendAsync(NotificationEventType.AppointmentCreated, slot.TherapistUserId, Roles.Therapist, appointment.OrganizationId, vars);
 
         var result = await GetByIdAsync(appointment.Id);
         result.Hints = hints;
@@ -124,8 +125,8 @@ public class AppointmentService
             ["time"] = appointment.ScheduleSlot.StartTime.ToString("HH:mm"),
         };
         if (client?.UserId != null)
-            await _notify.SendAsync(NotificationEventType.AppointmentCancelled, client.UserId.Value, "client", appointment.OrganizationId, cancelVars);
-        await _notify.SendAsync(NotificationEventType.AppointmentCancelled, appointment.TherapistUserId, "therapist", appointment.OrganizationId, cancelVars);
+            await _notify.SendAsync(NotificationEventType.AppointmentCancelled, client.UserId.Value, Roles.Client, appointment.OrganizationId, cancelVars);
+        await _notify.SendAsync(NotificationEventType.AppointmentCancelled, appointment.TherapistUserId, Roles.Therapist, appointment.OrganizationId, cancelVars);
 
         return await GetByIdAsync(id);
     }

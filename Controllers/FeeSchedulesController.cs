@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.FeeSchedule;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/fee-schedules")]
-[Authorize(Policy = "CanViewBilling")]
+[Authorize(Policy = Policies.CanViewBilling)]
 public class FeeSchedulesController : ControllerBase
 {
     private readonly FeeScheduleService _service;
@@ -22,7 +23,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateBilling")]
+    [Authorize(Policy = Policies.CanCreateBilling)]
     public async Task<IActionResult> Create([FromBody] CreateFeeScheduleDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -31,7 +32,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateFeeScheduleDto dto)
     {
         var fee = await _service.UpdateAsync(id, dto);
@@ -39,7 +40,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateBilling")]
+    [Authorize(Policy = Policies.CanUpdateBilling)]
     public async Task<IActionResult> Delete(int id)
     {
         await _service.DeleteAsync(id);

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.ScheduleSlot;
 using consulcore_backend.DTOs.ScheduleTemplate;
@@ -241,7 +242,7 @@ public class ScheduleService
                 ["time"] = slot.StartTime.ToString("HH:mm"),
             };
             if (client?.UserId != null)
-                await _notify.SendAsync(NotificationEventType.TherapistLeave, client.UserId.Value, "client", slot.OrganizationId, vars);
+                await _notify.SendAsync(NotificationEventType.TherapistLeave, client.UserId.Value, Roles.Client, slot.OrganizationId, vars);
         }
 
         return await GetSlotByIdAsync(slotId);

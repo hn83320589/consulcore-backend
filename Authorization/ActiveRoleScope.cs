@@ -36,7 +36,7 @@ public static class ActiveRoleScope
     public static bool ActingAsVerifiedNonClient(HttpRequest request, ClaimsPrincipal user)
     {
         var role = request.Headers["X-Active-Role"].FirstOrDefault();
-        if (string.IsNullOrEmpty(role) || role == "client") return false;
+        if (string.IsNullOrEmpty(role) || role == Roles.Client) return false;
         return JwtRoles(user).Contains(role);
     }
 

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ClientMemo;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,7 +20,7 @@ public class ClientMemosController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -28,7 +29,7 @@ public class ClientMemosController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanUpdateClients")]
+    [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Create([FromBody] CreateClientMemoDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -38,7 +39,7 @@ public class ClientMemosController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateClients")]
+    [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateClientMemoDto dto)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -47,7 +48,7 @@ public class ClientMemosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateClients")]
+    [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Delete(int id)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);

@@ -9,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/roles")]
-[Authorize(Policy = "CanManageStaff")]
+[Authorize(Policy = Policies.CanManageStaff)]
 public class RolesController : ControllerBase
 {
     private readonly RolePermissionService _rolePermissionService;
@@ -29,7 +29,7 @@ public class RolesController : ControllerBase
     [HttpPut("{id}/permissions")]
     public async Task<IActionResult> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsDto dto)
     {
-        var actingAsOwner = ActiveRoleScope.ActingAsVerified(Request, User, "owner");
+        var actingAsOwner = ActiveRoleScope.ActingAsVerified(Request, User, Roles.Owner);
         var role = await _rolePermissionService.UpdateRolePermissionsAsync(id, dto, actingAsOwner);
         return Ok(ApiResponse<RoleResponseDto>.Ok(role, "權限已更新"));
     }

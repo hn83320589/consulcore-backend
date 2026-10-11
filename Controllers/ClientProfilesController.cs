@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ClientProfile;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -25,7 +26,7 @@ public class ClientProfilesController : ControllerBase
     private bool HasFullClientScope()
     {
         var role = Request.Headers["X-Active-Role"].FirstOrDefault();
-        if (role is not ("owner" or "admin")) return false;
+        if (role is not (Roles.Owner or Roles.Admin)) return false;
 
         var rolesClaim = User.FindFirst("roles")?.Value;
         if (string.IsNullOrEmpty(rolesClaim)) return false;
@@ -41,7 +42,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetAll()
     {
         // BR-01：therapist 僅能看到自己被指派的個案；owner/admin 看全機構
@@ -56,7 +57,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetById(int id)
     {
         // 代診/交接：therapist 可唯讀非自己指派的個案，但跨心理師檢視須留稽核（見決策 locum-readonly-clinical-records）
@@ -68,7 +69,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpGet("by-therapist/{therapistUserId}")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetByTherapist(int therapistUserId)
     {
         // therapist 僅能查詢自己的個案清單
@@ -80,7 +81,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpGet("my-clients")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> GetMyClients()
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -89,7 +90,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpGet("search")]
-    [Authorize(Policy = "CanViewClients")]
+    [Authorize(Policy = Policies.CanViewClients)]
     public async Task<IActionResult> Search([FromQuery] string? keyword, [FromQuery] string? idNumberLast4)
     {
         // therapist 的搜尋結果僅限自己被指派的個案
@@ -99,7 +100,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateClients")]
+    [Authorize(Policy = Policies.CanCreateClients)]
     public async Task<IActionResult> Create([FromBody] CreateClientProfileDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -108,7 +109,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateClients")]
+    [Authorize(Policy = Policies.CanUpdateClients)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateClientProfileDto dto)
     {
         var client = await _clientService.UpdateAsync(id, dto, CurrentUserId(), HasFullClientScope());
@@ -116,7 +117,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanDeleteClients")]
+    [Authorize(Policy = Policies.CanDeleteClients)]
     public async Task<IActionResult> Delete(int id)
     {
         await _clientService.DeleteAsync(id);
@@ -124,7 +125,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpPost("{id}/assign-therapist")]
-    [Authorize(Policy = "CanManageClients")]
+    [Authorize(Policy = Policies.CanManageClients)]
     public async Task<IActionResult> AssignTherapist(int id, [FromBody] AssignTherapistDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -133,7 +134,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpPost("{id}/transfer-therapist/{currentTherapistUserId}")]
-    [Authorize(Policy = "CanManageClients")]
+    [Authorize(Policy = Policies.CanManageClients)]
     public async Task<IActionResult> TransferTherapist(
         int id, int currentTherapistUserId, [FromBody] TransferTherapistDto dto)
     {
@@ -143,7 +144,7 @@ public class ClientProfilesController : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [Authorize(Policy = "CanManageClients")]
+    [Authorize(Policy = Policies.CanManageClients)]
     public async Task<IActionResult> ChangeStatus(int id, [FromBody] ChangeStatusDto dto)
     {
         var client = await _clientService.ChangeStatusAsync(id, dto);

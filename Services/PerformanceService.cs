@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.PerformanceReview;
 using consulcore_backend.Exceptions;
@@ -197,7 +198,7 @@ public class PerformanceService
     public async Task<List<TherapistMetricsDto>> GetMetricsComparisonAsync(DateOnly startDate, DateOnly endDate)
     {
         var therapistIds = await _db.Users
-            .Where(u => u.UserRoles.Any(ur => ur.Role.Name == "therapist"))
+            .Where(u => u.UserRoles.Any(ur => ur.Role.Name == Roles.Therapist))
             .Select(u => u.Id).ToListAsync();
 
         var results = new List<TherapistMetricsDto>();

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.AppointmentSeries;
 using consulcore_backend.Exceptions;
@@ -164,7 +165,7 @@ public class AppointmentSeriesService
                 ["client_name"] = s.ClientProfile?.Name ?? "",
                 ["therapist_name"] = s.TherapistUser?.DisplayName ?? "",
             };
-            await _notify.SendAsync(NotificationEventType.SeriesRenewal, s.TherapistUserId, "therapist", s.OrganizationId, vars);
+            await _notify.SendAsync(NotificationEventType.SeriesRenewal, s.TherapistUserId, Roles.Therapist, s.OrganizationId, vars);
         }
 
         return pending.Count;

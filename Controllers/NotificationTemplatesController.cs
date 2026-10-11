@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Notification;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/notification-templates")]
-[Authorize(Policy = "CanManageNotifications")]
+[Authorize(Policy = Policies.CanManageNotifications)]
 public class NotificationTemplatesController : ControllerBase
 {
     private readonly NotificationService _service;

@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.Data;
 using consulcore_backend.DTOs.Billing;
 using consulcore_backend.Exceptions;
@@ -90,9 +91,9 @@ public class BillingService
                     ["package_name"] = clientPackage.Package.Name,
                     ["remaining"] = clientPackage.SessionsRemaining.ToString(),
                 };
-                await _notify.SendAsync(NotificationEventType.PackageLow, apt.TherapistUserId, "therapist", apt.OrganizationId, pkgVars);
+                await _notify.SendAsync(NotificationEventType.PackageLow, apt.TherapistUserId, Roles.Therapist, apt.OrganizationId, pkgVars);
                 foreach (var adminId in await GetAdminUserIdsAsync(apt.OrganizationId))
-                    await _notify.SendAsync(NotificationEventType.PackageLow, adminId, "admin", apt.OrganizationId, pkgVars);
+                    await _notify.SendAsync(NotificationEventType.PackageLow, adminId, Roles.Admin, apt.OrganizationId, pkgVars);
             }
 
             return await GetPaymentByIdAsync(record.Id);
@@ -343,9 +344,9 @@ public class BillingService
             };
 
             if (therapistUserId.HasValue)
-                await _notify.SendAsync(NotificationEventType.PackageExpiring, therapistUserId.Value, "therapist", cp.OrganizationId, vars);
+                await _notify.SendAsync(NotificationEventType.PackageExpiring, therapistUserId.Value, Roles.Therapist, cp.OrganizationId, vars);
             foreach (var adminId in await GetAdminUserIdsAsync(cp.OrganizationId))
-                await _notify.SendAsync(NotificationEventType.PackageExpiring, adminId, "admin", cp.OrganizationId, vars);
+                await _notify.SendAsync(NotificationEventType.PackageExpiring, adminId, Roles.Admin, cp.OrganizationId, vars);
         }
 
         return expired.Count;
@@ -357,7 +358,7 @@ public class BillingService
         return await _db.UserRoles
             .IgnoreQueryFilters()
             .Where(ur => ur.User.OrganizationId == orgId
-                && (ur.Role.Name == "admin" || ur.Role.Name == "owner"))
+                && (ur.Role.Name == Roles.Admin || ur.Role.Name == Roles.Owner))
             .Select(ur => ur.UserId)
             .Distinct()
             .ToListAsync();

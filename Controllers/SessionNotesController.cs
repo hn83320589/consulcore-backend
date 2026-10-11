@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.SessionNote;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -19,7 +20,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateSessions")]
+    [Authorize(Policy = Policies.CanCreateSessions)]
     public async Task<IActionResult> Create([FromBody] CreateSessionNoteDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -29,7 +30,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = "CanUpdateSessions")]
+    [Authorize(Policy = Policies.CanUpdateSessions)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSessionNoteDto dto)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -38,7 +39,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "CanUpdateSessions")]
+    [Authorize(Policy = Policies.CanUpdateSessions)]
     public async Task<IActionResult> Delete(int id)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -47,7 +48,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpPost("{id}/lock")]
-    [Authorize(Policy = "CanLockSessions")]
+    [Authorize(Policy = Policies.CanLockSessions)]
     public async Task<IActionResult> Lock(int id)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -56,7 +57,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpPost("{id}/unlock")]
-    [Authorize(Policy = "CanLockSessions")]
+    [Authorize(Policy = Policies.CanLockSessions)]
     public async Task<IActionResult> Unlock(int id)
     {
         var userId = int.Parse(User.FindFirst("userId")!.Value);
@@ -65,7 +66,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewSessions")]
+    [Authorize(Policy = Policies.CanViewSessions)]
     public async Task<IActionResult> GetByClient(int clientProfileId)
     {
         var notes = await _sessionNoteService.GetByClientAsync(clientProfileId);
@@ -73,7 +74,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpGet("by-appointment/{appointmentId}")]
-    [Authorize(Policy = "CanViewSessions")]
+    [Authorize(Policy = Policies.CanViewSessions)]
     public async Task<IActionResult> GetByAppointment(int appointmentId)
     {
         var note = await _sessionNoteService.GetByAppointmentAsync(appointmentId);
@@ -81,7 +82,7 @@ public class SessionNotesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    [Authorize(Policy = "CanViewSessions")]
+    [Authorize(Policy = Policies.CanViewSessions)]
     public async Task<IActionResult> GetById(int id)
     {
         var note = await _sessionNoteService.ViewByIdAsync(id);

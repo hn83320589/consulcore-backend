@@ -27,7 +27,7 @@ public class AppointmentSeriesController : ControllerBase
         => _clientService.GetClientProfileIdByUserAsync(int.Parse(User.FindFirst("userId")!.Value));
 
     [HttpPost]
-    [Authorize(Policy = "CanCreateAppointments")]
+    [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Create([FromBody] CreateAppointmentSeriesDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -37,7 +37,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpPost("{id}/renew")]
-    [Authorize(Policy = "CanCreateAppointments")]
+    [Authorize(Policy = Policies.CanCreateAppointments)]
     public async Task<IActionResult> Renew(int id, [FromBody] RenewSeriesDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -47,7 +47,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpPost("{id}/end")]
-    [Authorize(Policy = "CanUpdateAppointments")]
+    [Authorize(Policy = Policies.CanUpdateAppointments)]
     public async Task<IActionResult> End(int id)
     {
         var series = await _seriesService.EndAsync(id);
@@ -55,7 +55,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpGet("pending-renewal")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> PendingRenewal()
     {
         // 待續約清單為 staff 聚合視圖，非 staff 身份無權存取
@@ -67,7 +67,7 @@ public class AppointmentSeriesController : ControllerBase
     }
 
     [HttpGet("by-client/{clientProfileId}")]
-    [Authorize(Policy = "CanViewAppointments")]
+    [Authorize(Policy = Policies.CanViewAppointments)]
     public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
     {
         // 非 staff 身份只能查自己的常態預約，防以任意 id 讀取他人（IDOR）

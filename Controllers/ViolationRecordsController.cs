@@ -1,3 +1,4 @@
+using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.ViolationRecord;
 using consulcore_backend.Models;
 using consulcore_backend.Services;
@@ -8,7 +9,7 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/violation-records")]
-[Authorize(Policy = "CanManagePerformance")]
+[Authorize(Policy = Policies.CanManagePerformance)]
 public class ViolationRecordsController : ControllerBase
 {
     private readonly ViolationService _service;
