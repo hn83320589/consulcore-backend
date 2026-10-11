@@ -33,7 +33,9 @@ public class ScheduleSlot
 
     [Required]
     [MaxLength(20)]
+    // 樂觀併發：UPDATE 會帶 WHERE status = 讀取時的值，兩人同時預約同一時段時後寫者失敗（→ 409）
     [Column("status")]
+    [ConcurrencyCheck]
     public string Status { get; set; } = SlotStatus.Available;
 
     [Column("is_reserved_hold")]

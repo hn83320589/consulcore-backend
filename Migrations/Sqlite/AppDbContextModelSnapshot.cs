@@ -1611,6 +1611,7 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnName("start_time");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("TEXT")
