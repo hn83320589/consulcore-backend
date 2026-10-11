@@ -46,6 +46,10 @@ builder.Services.AddSwaggerGen();
 // HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
+// 時間來源（測試可替換 TimeProvider）
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<ClinicClock>();
+
 // Encryption
 builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 

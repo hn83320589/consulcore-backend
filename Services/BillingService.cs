@@ -14,11 +14,13 @@ public class BillingService
     private readonly FeeScheduleService _feeService;
     private readonly DiscountService _discountService;
     private readonly NotificationService _notify;
+    private readonly ClinicClock _clock;
 
     public BillingService(AppDbContext db, IAuditService audit,
-        FeeScheduleService feeService, DiscountService discountService, NotificationService notify)
+        FeeScheduleService feeService, DiscountService discountService, NotificationService notify, ClinicClock clock)
     {
         _db = db; _audit = audit; _feeService = feeService; _discountService = discountService; _notify = notify;
+        _clock = clock;
     }
 
     public async Task<PaymentRecordResponseDto?> OnAppointmentCompletedAsync(
@@ -48,7 +50,7 @@ public class BillingService
             .Where(cp => cp.ClientProfileId == apt.ClientProfileId
                 && cp.Status == ClientPackageStatus.Active
                 && cp.SessionsRemaining > 0
-                && cp.ExpiresAt > DateTime.UtcNow)
+                && cp.ExpiresAt > _clock.UtcNow)
             .OrderBy(cp => cp.ExpiresAt)
             .FirstOrDefaultAsync();
 
@@ -161,7 +163,7 @@ public class BillingService
             OrganizationId = orgId,
             ClientProfileId = dto.ClientProfileId,
             PackageId = dto.PackageId,
-            ExpiresAt = DateTime.UtcNow.AddDays(pkg.ValidDays),
+            ExpiresAt = _clock.UtcNow.AddDays(pkg.ValidDays),
             SessionsRemaining = pkg.TotalSessions,
             PaymentRecordId = payment.Id,
         };
@@ -317,7 +319,7 @@ public class BillingService
             .IgnoreQueryFilters()
             .Include(cp => cp.Package)
             .Include(cp => cp.ClientProfile)
-            .Where(cp => cp.Status == ClientPackageStatus.Active && cp.ExpiresAt <= DateTime.UtcNow)
+            .Where(cp => cp.Status == ClientPackageStatus.Active && cp.ExpiresAt <= _clock.UtcNow)
             .ToListAsync();
 
         foreach (var cp in expired)

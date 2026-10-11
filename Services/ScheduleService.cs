@@ -13,16 +13,15 @@ public class ScheduleService
     private readonly AppDbContext _db;
     private readonly IAuditService _audit;
     private readonly NotificationService _notify;
+    private readonly ClinicClock _clock;
 
-    public ScheduleService(AppDbContext db, IAuditService audit, NotificationService notify)
+    public ScheduleService(AppDbContext db, IAuditService audit, NotificationService notify, ClinicClock clock)
     {
         _db = db;
         _audit = audit;
         _notify = notify;
+        _clock = clock;
     }
-
-    // 台灣時區固定 UTC+8（無日光節約），以此計算「今天」避免 UTC 邊界日誤判
-    private static DateOnly LocalToday() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(8));
 
     // === Template CRUD ===
 
@@ -100,7 +99,7 @@ public class ScheduleService
     public async Task<ExpandResultDto> ExpandScheduleAsync(DateOnly startDate, DateOnly endDate, int orgId)
     {
         // BR-05: 不可調整過去日期
-        var today = LocalToday();
+        var today = _clock.Today;
         if (startDate < today)
             startDate = today;
 
@@ -205,7 +204,7 @@ public class ScheduleService
             ?? throw new KeyNotFoundException("時段不存在");
 
         // BR-05
-        var today = LocalToday();
+        var today = _clock.Today;
         if (slot.Date < today)
             throw new BusinessRuleException("不可調整過去日期的時段");
 
@@ -253,7 +252,7 @@ public class ScheduleService
         var slot = await _db.ScheduleSlots.FindAsync(slotId)
             ?? throw new KeyNotFoundException("時段不存在");
 
-        var today = LocalToday();
+        var today = _clock.Today;
         if (slot.Date < today)
             throw new BusinessRuleException("不可調整過去日期的時段");
 

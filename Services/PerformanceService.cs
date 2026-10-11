@@ -11,8 +11,14 @@ public class PerformanceService
 {
     private readonly AppDbContext _db;
     private readonly IAuditService _audit;
+    private readonly ClinicClock _clock;
 
-    public PerformanceService(AppDbContext db, IAuditService audit) { _db = db; _audit = audit; }
+    public PerformanceService(AppDbContext db, IAuditService audit, ClinicClock clock)
+    {
+        _db = db;
+        _audit = audit;
+        _clock = clock;
+    }
 
     public async Task<PerformanceReviewResponseDto> CreateAsync(
         CreatePerformanceReviewDto dto, int orgId, int reviewerId)
@@ -78,7 +84,7 @@ public class PerformanceService
     // 系統維護任務：跨機構掃描考核可見性排程，故 IgnoreQueryFilters（背景執行無 org context）
     public async Task<int> CheckVisibilityScheduleAsync()
     {
-        var now = DateTime.UtcNow;
+        var now = _clock.UtcNow;
         var changed = 0;
 
         // 到期：VisibleUntil 已過 → 收回
@@ -170,7 +176,7 @@ public class PerformanceService
         var longTermClients = await _db.TherapistClients
             .CountAsync(tc => tc.TherapistUserId == therapistUserId
                 && tc.Status == TherapistClientStatus.Active
-                && tc.CreatedAt <= DateTime.UtcNow.AddMonths(-3));
+                && tc.CreatedAt <= _clock.UtcNow.AddMonths(-3));
 
         var payments = await _db.PaymentRecords
             .Where(r => r.AppointmentId.HasValue
