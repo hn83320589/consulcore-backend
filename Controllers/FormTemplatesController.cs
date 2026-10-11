@@ -8,7 +8,8 @@ namespace consulcore_backend.Controllers;
 
 [ApiController]
 [Route("api/form-templates")]
-[Authorize]
+// 範本含初診評估的高敏感題目：讀取限機構人員，修改限有機構設定權限者
+[Authorize(Policy = "CanViewClients")]
 public class FormTemplatesController : ControllerBase
 {
     private readonly FormService _formService;
@@ -33,6 +34,7 @@ public class FormTemplatesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "CanManageOrgSettings")]
     public async Task<IActionResult> Create([FromBody] CreateFormTemplateDto dto)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
@@ -42,6 +44,7 @@ public class FormTemplatesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "CanManageOrgSettings")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateFormTemplateDto dto)
     {
         var template = await _formService.UpdateTemplateAsync(id, dto);
@@ -49,6 +52,7 @@ public class FormTemplatesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "CanManageOrgSettings")]
     public async Task<IActionResult> Delete(int id)
     {
         await _formService.DeleteTemplateAsync(id);
@@ -56,6 +60,7 @@ public class FormTemplatesController : ControllerBase
     }
 
     [HttpPost("{id}/clone")]
+    [Authorize(Policy = "CanManageOrgSettings")]
     public async Task<IActionResult> Clone(int id)
     {
         var orgId = int.Parse(User.FindFirst("organizationId")!.Value);
