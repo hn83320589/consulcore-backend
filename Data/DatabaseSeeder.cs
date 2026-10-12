@@ -158,7 +158,7 @@ public static class DatabaseSeeder
 
         var events = new (string Type, string Subject, string Body, bool Required)[]
         {
-            (NotificationEventType.AccountCreated, "帳號已建立", "您好 {{client_name}}，您的諮商帳號已建立。預設密碼為身分證後4碼+生日MMDD，請盡快登入修改。", true),
+            (NotificationEventType.AccountCreated, "帳號已建立", "您好 {{client_name}}，您的諮商帳號已建立。初始密碼由櫃檯提供，首次登入時需設定新密碼。", true),
             (NotificationEventType.AppointmentCreated, "預約確認", "{{client_name}} 您好，您的預約已確認：{{date}} {{time}} 與 {{therapist_name}}。", true),
             (NotificationEventType.AppointmentCancelled, "預約取消", "{{client_name}} 您好，您於 {{date}} {{time}} 的預約已取消。", true),
             (NotificationEventType.AppointmentReminder, "預約提醒", "{{client_name}} 您好，提醒您明天 {{time}} 有預約。", false),

@@ -82,7 +82,7 @@ public class BillingService
             await _db.SaveChangesAsync();
 
             await _audit.LogAsync("package_deduct", "payment_record", record.Id,
-                $"套餐扣次 (remaining={clientPackage.SessionsRemaining})");
+                $"套餐扣次，剩餘 {clientPackage.SessionsRemaining} 次");
 
             // BR-10: 套餐 ≤2 觸發提醒（心理師 + 行政）
             if (clientPackage.SessionsRemaining <= 2 && clientPackage.SessionsRemaining > 0)
@@ -132,7 +132,7 @@ public class BillingService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("create", "payment_record", paymentRecord.Id,
-            $"自動產生收費 original={originalAmount} final={finalAmount}");
+            $"自動產生收費：原價 {AuditFormat.Money(originalAmount)}，應收 {AuditFormat.Money(finalAmount)}");
 
         return await GetPaymentByIdAsync(paymentRecord.Id);
     }

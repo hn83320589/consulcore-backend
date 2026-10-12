@@ -233,6 +233,7 @@ AuditLog（不可刪除, changes 加密）
 | AuthController | /api/auth | login, register, me, change-password |
 | UsersController | /api/users | CRUD (Owner) |
 | TherapistsController | /api/therapists | 心理師下拉選單（id + 姓名；排班 / 預約 / 考核任一檢視權限） |
+| OrganizationController | /api/organization | 目前機構的基本資料 get / update（org.settings） |
 | RolesController | /api/roles | 角色 + 權限矩陣 |
 | ClientProfilesController | /api/client-profiles | CRUD + assign/transfer + search |
 | ConsentTemplatesController | /api/consent-templates | CRUD |

@@ -161,7 +161,8 @@ public class PerformanceService
             .Select(a => new { a.Id, a.Status, a.ScheduleSlot.Date, a.ScheduleSlot.StartTime })
             .ToListAsync();
 
-        var totalApts = appointments.Count;
+        // 分母只算已有結果的預約：還是「已排定」的尚未發生，區間延伸到未來時不能拉低比率
+        var totalApts = appointments.Count(a => a.Status != AppointmentStatus.Scheduled);
         var completed = appointments.Count(a => a.Status == AppointmentStatus.Completed);
         var noShow = appointments.Count(a => a.Status == AppointmentStatus.NoShow);
 

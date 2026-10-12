@@ -39,7 +39,7 @@ public class SessionNoteService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("create", "session_note", note.Id,
-            $"建立晤談紀錄 (client={dto.ClientProfileId})");
+            $"建立晤談紀錄（個案 #{dto.ClientProfileId}）");
 
         return await GetByIdAsync(note.Id);
     }
@@ -169,7 +169,7 @@ public class SessionNoteService
 
         if (note != null)
             await _audit.LogAsync("view", "session_note", note.Id,
-                $"檢視晤談紀錄 (appointment={appointmentId})");
+                $"檢視晤談紀錄（預約 #{appointmentId}）");
 
         return note != null ? MapToDto(note) : null;
     }
@@ -189,7 +189,7 @@ public class SessionNoteService
     public async Task<SessionNoteResponseDto> ViewByIdAsync(int id)
     {
         var dto = await GetByIdAsync(id);
-        await _audit.LogAsync("view", "session_note", id, $"檢視晤談紀錄 (id={id})");
+        await _audit.LogAsync("view", "session_note", id, $"檢視晤談紀錄 #{id}");
         return dto;
     }
 

@@ -54,7 +54,7 @@ public class AppointmentSeriesService
         var created = await GenerateAppointmentsAsync(series, orgId, createdBy);
 
         await _audit.LogAsync("create", "appointment_series", series.Id,
-            $"建立常態性預約 (client={dto.ClientProfileId}, therapist={dto.TherapistUserId}), 產生 {created} 筆預約");
+            $"建立常態性預約（個案 #{dto.ClientProfileId}、心理師 #{dto.TherapistUserId}），產生 {created} 筆預約");
 
         return await GetByIdAsync(series.Id);
     }

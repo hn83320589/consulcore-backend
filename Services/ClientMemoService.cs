@@ -50,7 +50,7 @@ public class ClientMemoService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("create", "client_memo", memo.Id,
-            $"建立個案備忘 (client={dto.ClientProfileId})");
+            $"建立個案備忘（個案 #{dto.ClientProfileId}）");
 
         return await GetByIdAsync(memo.Id, therapistUserId);
     }

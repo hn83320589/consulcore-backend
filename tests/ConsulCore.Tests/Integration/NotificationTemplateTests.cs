@@ -24,4 +24,22 @@ public class NotificationTemplateTests(ConsulCoreApiFactory factory) : IClassFix
         Assert.Equal(first.GetProperty("channel").GetString(), updated.GetProperty("channel").GetString());
         Assert.Equal(first.GetProperty("isRequired").GetBoolean(), updated.GetProperty("isRequired").GetBoolean());
     }
+
+    // 初始密碼已改為隨機產生（D11），範本卻仍告訴個案「身分證後4碼+生日」
+    [Fact]
+    public async Task Account_created_template_does_not_describe_the_retired_password_rule()
+    {
+        var owner = await _api.RegisterOrganizationAsync("nt2 診所", "nt2_owner");
+        var templates = await ApiTestClient.ReadDataAsync(
+            await _api.SendAsync(HttpMethod.Get, "/api/notification-templates", owner, "owner"));
+
+        var bodies = templates.EnumerateArray()
+            .Where(t => t.GetProperty("eventType").GetString() == "account_created")
+            .Select(t => t.GetProperty("bodyTemplate").GetString()!)
+            .ToList();
+
+        Assert.Equal(3, bodies.Count);
+        Assert.All(bodies, b => Assert.DoesNotContain("身分證", b));
+        Assert.All(bodies, b => Assert.Contains("初始密碼", b));
+    }
 }

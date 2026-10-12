@@ -61,7 +61,7 @@ public class ScheduleService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("create", "schedule_template", template.Id,
-            $"建立班表範本 (therapist={dto.TherapistUserId}, day={dto.DayOfWeek})");
+            $"建立班表範本（心理師 #{dto.TherapistUserId}、星期 {dto.DayOfWeek}）");
 
         return await GetTemplateByIdAsync(template.Id);
     }

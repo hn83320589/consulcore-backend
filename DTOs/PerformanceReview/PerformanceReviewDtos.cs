@@ -57,9 +57,9 @@ public class TherapistMetricsDto
 {
     public int TherapistUserId { get; set; }
     public string TherapistName { get; set; } = string.Empty;
-    /// <summary>預約完成率（%）</summary>
+    /// <summary>預約完成率（%）：已完成 ÷ 已有結果的預約（不含仍為已排定者）</summary>
     public decimal AppointmentCompletionRate { get; set; }
-    /// <summary>未到率（%）</summary>
+    /// <summary>未到率（%）：未到 ÷ 已有結果的預約（不含仍為已排定者）</summary>
     public decimal NoShowRate { get; set; }
     /// <summary>紀錄及時性：晤談後平均多久完成紀錄（小時）</summary>
     public decimal AvgNoteDelayHours { get; set; }
