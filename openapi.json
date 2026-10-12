@@ -3462,9 +3462,30 @@
         "tags": [
           "Health"
         ],
+        "summary": "資料庫連不上時回 503，讓監控與負載平衡器知道這台不可用",
         "responses": {
           "200": {
             "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatusDtoApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "text/plain": {
                 "schema": {
@@ -9307,13 +9328,19 @@
       },
       "HealthStatusDto": {
         "required": [
+          "database",
           "status",
           "timestamp"
         ],
         "type": "object",
         "properties": {
           "status": {
-            "type": "string"
+            "type": "string",
+            "description": "healthy / unhealthy"
+          },
+          "database": {
+            "type": "string",
+            "description": "ok / unreachable"
           },
           "timestamp": {
             "type": "string",

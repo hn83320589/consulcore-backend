@@ -57,7 +57,7 @@ public class ErrorHandlingMiddleware
             // EF 的併發訊息是英文技術細節，改為使用者看得懂的說明
             DbUpdateConcurrencyException => "資料剛被其他人更新（例如此時段剛被預約），請重新整理後再試",
             _ when exposeMessage || _env.IsDevelopment() => exception.Message,
-            _ => "伺服器發生錯誤，請稍後再試",
+            _ => $"伺服器發生錯誤，請稍後再試（追蹤碼：{context.TraceIdentifier}）",
         };
 
         // 僅在未預期的 500 且開發環境時附上堆疊

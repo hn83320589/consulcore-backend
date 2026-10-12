@@ -19,6 +19,9 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// log 帶上 scope（CorrelationIdMiddleware 放入的追蹤碼），才能把一次請求的 log 串起來
+builder.Logging.AddSimpleConsole(options => options.IncludeScopes = true);
+
 // === Services ===
 
 builder.Services.AddControllers()
@@ -205,6 +208,7 @@ if (!string.IsNullOrEmpty(connectionString))
 
 // === Middleware Pipeline ===
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())

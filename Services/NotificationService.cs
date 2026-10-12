@@ -65,17 +65,14 @@ public class NotificationService
                         log.Status = NotificationStatus.Sent;
                         log.SentAt = DateTime.UtcNow;
                         break;
+                    // Email / SMS 尚未實作，只記 log；紀錄維持 queued（未寄出），不可標成 sent
                     case NotificationChannel.Email:
-                        // TODO: 接 SMTP
+                        // TODO(#14): 接 SMTP
                         _logger.LogInformation("[Email Mock] To userId={RecipientId}: {Subject}", recipientId, subject);
-                        log.Status = NotificationStatus.Sent;
-                        log.SentAt = DateTime.UtcNow;
                         break;
                     case NotificationChannel.Sms:
-                        // TODO: 接 SMS API
+                        // TODO(#14): 接 SMS API
                         _logger.LogInformation("[SMS Mock] To userId={RecipientId}: {Body}", recipientId, body);
-                        log.Status = NotificationStatus.Sent;
-                        log.SentAt = DateTime.UtcNow;
                         break;
                 }
             }

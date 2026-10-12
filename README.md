@@ -79,21 +79,25 @@ dotnet ef database update                             # 套用 migration 到資�
 啟動後：
 
 - Swagger UI（僅開發環境）：http://localhost:5037/swagger
-- 健康檢查：`GET http://localhost:5037/api/health`
+- 健康檢查：`GET http://localhost:5037/api/health`（會確認資料庫連線，連不上回 503）
+- 範例請求：[`consulcore.http`](./consulcore.http)（開設機構 → 登入 → 帶 token 與 `X-Active-Role` 呼叫 API）
 
 首次啟動會在 `App_Data/` 建立 SQLite 資料庫、自動套用 migration 並執行 `DatabaseSeeder`（建立權限清單）。
-機構、預設角色、系統表單與通知範本在 `POST /api/auth/register` 開設機構時建立，第一個帳號也由此產生。
+**資料庫是空的，沒有預設帳號**：第一個帳號（機構擁有者）用 `POST /api/auth/register` 開設機構時建立，
+預設角色、系統表單與通知範本也在此時產生。可直接執行 `consulcore.http` 的第 1 步，或在前端登入頁之外以 Swagger 呼叫。
 重置資料庫：停止 API 後刪除 `App_Data/consulcore.db*`。
 
 ---
 
 ## 背景排程
 
-`ScheduledMaintenanceService` 每 24 小時執行一次跨機構維護：
+`ScheduledMaintenanceService` 每天診所時間 03:00（`Clinic:TimeZone`，預設 Asia/Taipei）執行跨機構維護，結果寫入稽核（操作者為「系統」）：
 
 - 套餐到期轉 `expired`
 - 考核可見性排程（到時開放 / 到期收回）
-- 常態性預約續約提醒（剩餘 ≤ 2 次）
+- 常態性預約續約提醒（剩餘 ≤ 2 次；每個系列只提醒一次）
+
+每個請求都有追蹤碼 `X-Correlation-Id`（沿用呼叫端送來的或自動產生），會出現在回應 header、log 與 500 錯誤訊息中。
 
 ---
 

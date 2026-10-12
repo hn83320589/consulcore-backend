@@ -1,0 +1,55 @@
+# ConsulCore API 範例請求（VS Code REST Client / JetBrains HTTP Client / Visual Studio 皆可直接執行）
+# 先 `dotnet run` 啟動 API。資料庫是空的時，第一個帳號用「1. 開設機構」建立。
+# 帳號密碼為本機示範用，請勿用於正式環境。
+
+@baseUrl = http://localhost:5037/api
+@username = demo_owner
+@password = DemoOwner123!
+
+### 健康檢查（資料庫連不上時回 503）
+GET {{baseUrl}}/health
+
+### 1. 開設機構：同時建立擁有者帳號、預設角色、系統表單與通知範本
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "organizationName": "示範諮商所",
+  "username": "{{username}}",
+  "email": "owner@example.com",
+  "password": "{{password}}",
+  "displayName": "示範擁有者",
+  "phone": "0900000000"
+}
+
+### 2. 登入（回應的 token 供後續請求使用）
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+@token = {{login.response.body.data.token}}
+
+### 3. 目前使用者與權限（每個需登入的請求都要帶 X-Active-Role，且必須是自己擁有的角色）
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+X-Active-Role: owner
+
+### 4. 建立診間
+POST {{baseUrl}}/rooms
+Authorization: Bearer {{token}}
+X-Active-Role: owner
+Content-Type: application/json
+
+{
+  "name": "陽光室"
+}
+
+### 5. 稽核紀錄（分頁：data 為 { items, totalCount, page, pageSize }，pageSize 上限 100）
+GET {{baseUrl}}/audit-logs?page=1&pageSize=20
+Authorization: Bearer {{token}}
+X-Active-Role: owner
