@@ -20,7 +20,7 @@ public class NotificationOwnershipTests(ConsulCoreApiFactory factory) : IClassFi
         var other = await _api.LoginTokenAsync("noti1_other", "Pass123!");
         var slot = (await clinic.AvailableSlotsAsync(clinic.Monday)).First();
         await clinic.BookAsync(slot.GetProperty("id").GetInt32()); // 通知指派的心理師
-        var notifications = await ApiTestClient.ReadDataAsync(
+        var notifications = await ApiTestClient.ReadItemsAsync(
             await _api.SendAsync(HttpMethod.Get, "/api/notifications", recipient, "therapist"));
         var notificationId = notifications.EnumerateArray().First().GetProperty("id").GetInt32();
         var before = await UnreadCountAsync(recipient);
@@ -38,7 +38,7 @@ public class NotificationOwnershipTests(ConsulCoreApiFactory factory) : IClassFi
         var recipient = await _api.LoginTokenAsync("noti2_ther", "Pass123!");
         var slot = (await clinic.AvailableSlotsAsync(clinic.Monday)).First();
         await clinic.BookAsync(slot.GetProperty("id").GetInt32());
-        var notifications = await ApiTestClient.ReadDataAsync(
+        var notifications = await ApiTestClient.ReadItemsAsync(
             await _api.SendAsync(HttpMethod.Get, "/api/notifications", recipient, "therapist"));
         var notificationId = notifications.EnumerateArray().First().GetProperty("id").GetInt32();
         var before = await UnreadCountAsync(recipient);

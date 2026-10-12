@@ -142,17 +142,17 @@ public class NotificationService
 
     // === User notifications ===
 
-    public async Task<List<NotificationLogResponseDto>> GetByUserAsync(int userId)
+    public async Task<PagedResult<NotificationLogResponseDto>> GetByUserAsync(int userId, int page, int pageSize)
     {
         return await _db.NotificationLogs
             .Where(n => n.RecipientId == userId && n.Channel == NotificationChannel.InApp)
             .OrderByDescending(n => n.CreatedAt)
-            .Take(50)
-            .Select(n => new NotificationLogResponseDto
+            .ThenByDescending(n => n.Id)
+            .ToPagedResultAsync(page, pageSize, n => new NotificationLogResponseDto
             {
                 Id = n.Id, Channel = n.Channel, Subject = n.Subject, Body = n.Body,
                 Status = n.Status, SentAt = n.SentAt, ReadAt = n.ReadAt, CreatedAt = n.CreatedAt,
-            }).ToListAsync();
+            });
     }
 
     public async Task<int> GetUnreadCountAsync(int userId)

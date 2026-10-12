@@ -13,7 +13,7 @@ public class SystemAuditTests(ConsulCoreApiFactory factory) : IClassFixture<Cons
 
     private async Task<List<System.Text.Json.JsonElement>> AuditLogsAsync(string ownerToken, string resourceType, int resourceId)
     {
-        var logs = await ApiTestClient.ReadDataAsync(await _api.SendAsync(HttpMethod.Get,
+        var logs = await ApiTestClient.ReadItemsAsync(await _api.SendAsync(HttpMethod.Get,
             $"/api/audit-logs?resourceType={resourceType}&resourceId={resourceId}", ownerToken, "owner"));
         return logs.EnumerateArray().ToList();
     }
