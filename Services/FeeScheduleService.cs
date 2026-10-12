@@ -31,7 +31,7 @@ public class FeeScheduleService
         };
         _db.FeeSchedules.Add(fee);
         await _db.SaveChangesAsync();
-        await _audit.LogAsync("create", "fee_schedule", fee.Id, $"建立費率「{fee.Name}」${fee.Amount}");
+        await _audit.LogAsync("create", "fee_schedule", fee.Id, $"建立費率「{fee.Name}」{AuditFormat.Money(fee.Amount)}");
         return MapToDto(fee);
     }
 

@@ -171,7 +171,7 @@ public class BillingService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("purchase", "client_package", clientPkg.Id,
-            $"購買套餐「{pkg.Name}」({pkg.TotalSessions}次/${pkg.TotalAmount})");
+            $"購買套餐「{pkg.Name}」（{pkg.TotalSessions} 次，{AuditFormat.Money(pkg.TotalAmount)}）");
 
         return await GetClientPackageByIdAsync(clientPkg.Id);
     }
@@ -201,7 +201,7 @@ public class BillingService
         record.Note = dto.Note;
         record.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        await _audit.LogAsync("refund", "payment_record", id, $"退費 ${record.FinalAmount}");
+        await _audit.LogAsync("refund", "payment_record", id, $"退費 {AuditFormat.Money(record.FinalAmount)}");
         return await GetPaymentByIdAsync(id);
     }
 
