@@ -35,6 +35,7 @@ public static class Policies
     public const string CanViewPerformance = "CanViewPerformance";
     public const string CanManagePerformance = "CanManagePerformance";
     public const string CanManageOrgSettings = "CanManageOrgSettings";
+    public const string CanListTherapists = "CanListTherapists";
 
     public static readonly IReadOnlyDictionary<string, string> PermissionByPolicy = new Dictionary<string, string>
     {
@@ -71,4 +72,14 @@ public static class Policies
         [CanManagePerformance] = Permissions.PerformanceManage,
         [CanManageOrgSettings] = Permissions.OrgSettings,
     };
+
+    /// <summary>需要好幾個頁面共用的資料：角色擁有其中任一權限即可。</summary>
+    public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> AnyPermissionByPolicy =
+        new Dictionary<string, IReadOnlyList<string>>
+        {
+            // 排班、預約、考核頁的心理師下拉選單
+            [CanListTherapists] = [Permissions.ScheduleView, Permissions.AppointmentView, Permissions.PerformanceView],
+        };
+
+    public static IEnumerable<string> All => PermissionByPolicy.Keys.Concat(AnyPermissionByPolicy.Keys);
 }

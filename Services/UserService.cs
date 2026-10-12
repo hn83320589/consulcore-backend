@@ -30,6 +30,15 @@ public class UserService
             .ToListAsync();
     }
 
+    public async Task<List<TherapistOptionDto>> GetTherapistOptionsAsync()
+    {
+        return await ExistingUsers
+            .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == Roles.Therapist))
+            .OrderBy(u => u.DisplayName).ThenBy(u => u.Id)
+            .Select(u => new TherapistOptionDto { Id = u.Id, DisplayName = u.DisplayName })
+            .ToListAsync();
+    }
+
     public async Task<UserResponseDto> GetByIdAsync(int id)
     {
         var user = await ExistingUsers

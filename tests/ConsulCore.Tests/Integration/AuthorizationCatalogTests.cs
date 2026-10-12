@@ -26,13 +26,14 @@ public class AuthorizationCatalogTests(ConsulCoreApiFactory factory) : IClassFix
             .ToList();
 
         Assert.NotEmpty(used);
-        Assert.All(used, p => Assert.Contains(p!, Policies.PermissionByPolicy.Keys));
+        Assert.All(used, p => Assert.Contains(p!, Policies.All));
     }
 
     [Fact]
     public void Every_policy_maps_to_a_known_permission()
     {
-        Assert.All(Policies.PermissionByPolicy.Values, code => Assert.Contains(code, Permissions.All));
+        var codes = Policies.PermissionByPolicy.Values.Concat(Policies.AnyPermissionByPolicy.Values.SelectMany(c => c));
+        Assert.All(codes, code => Assert.Contains(code, Permissions.All));
     }
 
     [Fact]
