@@ -178,6 +178,10 @@ builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy(policy, p => p.Requirements.Add(new PermissionRequirement(permission)));
     }
+    foreach (var (policy, permissions) in Policies.AnyPermissionByPolicy)
+    {
+        options.AddPolicy(policy, p => p.Requirements.Add(new PermissionRequirement([.. permissions])));
+    }
 });
 
 // CORS

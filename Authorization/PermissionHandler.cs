@@ -34,7 +34,7 @@ public class PermissionHandler : AuthorizationHandler<PermissionRequirement>
             .Where(r => r.OrganizationId == orgId && r.Name == activeRole)
             .SelectMany(r => r.RolePermissions)
             .Select(rp => rp.Permission)
-            .AnyAsync(p => p.Code == requirement.PermissionCode);
+            .AnyAsync(p => requirement.PermissionCodes.Contains(p.Code));
 
         if (hasPermission)
         {
