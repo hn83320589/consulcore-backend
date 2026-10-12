@@ -23,5 +23,6 @@ public class FieldValueResponseDto
     public string FieldLabel { get; set; } = string.Empty;
     [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = string.Empty;
+    /// <summary>JSON 字串</summary>
     public string? Value { get; set; }
 }

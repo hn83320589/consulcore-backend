@@ -10,9 +10,7 @@ public class SignConsentDto
     [Required]
     public int ClientProfileId { get; set; }
 
-    /// <summary>
-    /// Base64 encoded signature image
-    /// </summary>
+    /// <summary>簽名圖片（Base64）</summary>
     public string? SignatureImage { get; set; }
 
     public bool SignedRemotely { get; set; }

@@ -24,6 +24,7 @@ public class AppointmentResponseDto
     [ConstantValues(typeof(AppointmentStatus))]
     public string Status { get; set; } = string.Empty;
     public string? Note { get; set; }
+    /// <summary>溫和提示（BR-06），例如個案預約非慣用心理師；不阻擋建立。空陣列代表無提示</summary>
     public List<string> Hints { get; set; } = [];
     public DateTime CreatedAt { get; set; }
 }
@@ -33,6 +34,7 @@ public class RescheduleDto
     public int NewScheduleSlotId { get; set; }
 }
 
+/// <summary>取消預約時的備註；body 可整個省略</summary>
 public class AppointmentNoteDto
 {
     public string? Note { get; set; }

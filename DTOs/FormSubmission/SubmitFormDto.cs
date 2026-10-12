@@ -19,5 +19,6 @@ public class FieldValueDto
     [Required]
     public int FieldId { get; set; }
 
+    /// <summary>JSON 字串</summary>
     public string? Value { get; set; } // JSON string
 }

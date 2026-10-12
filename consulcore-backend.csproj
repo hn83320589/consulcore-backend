@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>consulcore_backend</RootNamespace>
+    <!-- DTO 上的 /// 註解會成為 openapi.json 的欄位說明（前端產生的型別也會帶 JSDoc）；
+         不要求每個 public 成員 / 參數都寫註解，所以關掉 CS1591、CS1573 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 
   <!-- 專案檔在 repo 根目錄，SDK 會把 tests/** 一起編進主程式；測試專案另有自己的 csproj -->

@@ -25,6 +25,7 @@ public class CreateUserDto
     [MaxLength(20)]
     public string? Phone { get; set; }
 
+    /// <summary>角色名稱，至少 1 個</summary>
     [Required]
     [MinLength(1)]
     public List<string> Roles { get; set; } = [];

@@ -11,11 +11,13 @@ public class CreateDiscountDto
     [MaxLength(20)] public string DiscountType { get; set; } = "percentage";
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }
+    /// <summary>綁定角色標籤時自動套用（BR-11）</summary>
     [MaxLength(50)] public string? ApplicableRole { get; set; }
-    // null = 機構通用折扣；指定心理師 = 專屬折扣
+    /// <summary>null = 機構通用折扣；有值 = 該心理師專屬（查找時專屬優先）</summary>
     public int? TherapistUserId { get; set; }
 }
 
+/// <summary>不含 TherapistUserId：心理師綁定只在建立時設定</summary>
 public class UpdateDiscountDto
 {
     public string? Name { get; set; }
@@ -32,7 +34,9 @@ public class DiscountResponseDto
     public string DiscountType { get; set; } = string.Empty;
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }
+    /// <summary>綁定角色標籤時自動套用（BR-11）</summary>
     public string? ApplicableRole { get; set; }
+    /// <summary>null = 機構通用折扣；有值 = 該心理師專屬（查找時專屬優先）</summary>
     public int? TherapistUserId { get; set; }
     public bool IsActive { get; set; }
 }

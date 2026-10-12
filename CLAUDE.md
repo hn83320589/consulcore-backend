@@ -274,6 +274,7 @@ AuditLog（不可刪除, changes 加密）
 - 新功能與 bug 修正先寫測試；API 行為用 `Integration/` 的 `ConsulCoreApiFactory` + `ApiTestClient` 測
 - 錯誤以例外表達，由 `ErrorHandlingMiddleware` 對應狀態碼：`BusinessRuleException` → 400、`ForbiddenException` → 403、`KeyNotFoundException` → 404、`DbUpdateConcurrencyException` → 409，訊息會回給前端。**不要**用 `InvalidOperationException`（框架也會丟，訊息不外洩、回 500）或 `UnauthorizedAccessException`（401 = 登入失效，前端會登出；只用於登入失敗）
 - Action 回傳 `ActionResult<ApiResponse<T>>`，直接 `return ApiResponse<T>.Ok(...)`（不要包 `Ok(...)`，型別才會被編譯器檢查）；匿名物件不會產生有用的 schema，回傳資料一律用 DTO。檔案下載用 `[ProducesResponseType<FileResult>(200, "text/csv")]` 標註
+- 欄位語意（格式、null 代表什麼、對應的業務規則）寫在 DTO 屬性的 `/// <summary>`，會成為 OpenAPI 欄位說明並帶進前端產生的型別；`docs/frontend-integration.md` 不再列欄位
 - 值只會是某個常數類別（`AppointmentStatus` 等）的 string 欄位，在 DTO 上標 `[ConstantValues(typeof(...))]`，OpenAPI 才會列出可用值（只做文件，不驗證輸入）
 - `openapi.json`（repo 根目錄）是前端產生 TS 型別的來源，由 `OpenApiContractTests` 檢查與程式碼一致；改到 DTO 或路由時執行 `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests` 重新產生並一起 commit
 - 資料存取保持 provider 中立（不寫 raw SQL、不指定資料庫型別名稱、decimal 用 `[Precision]`），規則見 `docs/database.md`

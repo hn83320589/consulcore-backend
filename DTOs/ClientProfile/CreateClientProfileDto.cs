@@ -20,14 +20,9 @@ public class CreateClientProfileDto
     public string? Notes { get; set; }
     public string? MedicalHistory { get; set; }
 
-    /// <summary>
-    /// true = 建立帳號（預設密碼：身分證後4碼+生日MMDD）
-    /// false = 不建立帳號
-    /// </summary>
+    /// <summary>true = 同時建立個案帳號；隨機初始帳密只在回應的 initialCredentials 回傳一次</summary>
     public bool CreateAccount { get; set; }
 
-    /// <summary>
-    /// 指派的心理師 UserId（可選）
-    /// </summary>
+    /// <summary>建檔時指派的心理師（選填；須為本機構啟用中的 therapist）</summary>
     public int? TherapistUserId { get; set; }
 }

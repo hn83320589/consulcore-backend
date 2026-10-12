@@ -11,6 +11,7 @@ public class FeeScheduleResponseDto
     public string SessionType { get; set; } = string.Empty;
     [ConstantValues(typeof(AppointmentVisitType))]
     public string VisitType { get; set; } = string.Empty;
+    /// <summary>null = 機構通用費率；查找時心理師專屬優先（BR-09）</summary>
     public int? TherapistUserId { get; set; }
     public string? TherapistName { get; set; }
     public decimal Amount { get; set; }

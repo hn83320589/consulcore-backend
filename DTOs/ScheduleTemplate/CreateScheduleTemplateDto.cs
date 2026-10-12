@@ -17,6 +17,7 @@ public class CreateScheduleTemplateDto
     [Required]
     public string EndTime { get; set; } = string.Empty; // "17:00"
 
+    /// <summary>每個時段的長度（分鐘，10–120）</summary>
     [Range(10, 120)]
     public int SlotDuration { get; set; } = 50;
 }

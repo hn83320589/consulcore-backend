@@ -95,6 +95,17 @@ public class OpenApiContractTests(ConsulCoreApiFactory factory) : IClassFixture<
         Assert.Equal(expected, values);
     }
 
+    // 欄位語意（例如「傳入就整組覆蓋」）寫在 DTO 的 /// 註解，跟著 spec 進到前端產生的型別
+    [Fact]
+    public async Task Dto_field_comments_become_schema_descriptions()
+    {
+        using var spec = JsonDocument.Parse(await GenerateAsync());
+        var sections = spec.RootElement.GetProperty("components").GetProperty("schemas")
+            .GetProperty("UpdateFormTemplateDto").GetProperty("properties").GetProperty("sections");
+
+        Assert.Contains("整組覆蓋", sections.GetProperty("description").GetString());
+    }
+
     [Fact]
     public async Task Committed_openapi_json_matches_the_code()
     {

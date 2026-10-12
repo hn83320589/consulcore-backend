@@ -23,6 +23,7 @@ public class CreateAppointmentSeriesDto
     [ConstantValues(typeof(SeriesFrequency))]
     public string Frequency { get; set; } = "weekly";
 
+    /// <summary>1–3 個月（BR-07 上限 3 個月）</summary>
     [Range(1, 3)]
-    public int Months { get; set; } = 1; // BR-07: 上限 3 個月
+    public int Months { get; set; } = 1;
 }

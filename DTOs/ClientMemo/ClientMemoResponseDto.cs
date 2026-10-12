@@ -12,7 +12,8 @@ public class ClientMemoResponseDto
     [ConstantValues(typeof(MemoCategory))]
     public string Category { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
-    public bool IsEditable { get; set; } // true = 當前心理師, false = 他人
+    /// <summary>true = 目前的心理師可編輯；false = 他人所寫，唯讀（BR-16）</summary>
+    public bool IsEditable { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
