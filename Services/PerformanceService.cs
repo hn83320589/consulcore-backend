@@ -161,10 +161,11 @@ public class PerformanceService
             .Select(a => new { a.Id, a.Status, a.ScheduleSlot.Date, a.ScheduleSlot.StartTime })
             .ToListAsync();
 
-        // 分母只算已有結果的預約：還是「已排定」的尚未發生，區間延伸到未來時不能拉低比率
-        var totalApts = appointments.Count(a => a.Status != AppointmentStatus.Scheduled);
         var completed = appointments.Count(a => a.Status == AppointmentStatus.Completed);
         var noShow = appointments.Count(a => a.Status == AppointmentStatus.NoShow);
+        // 分母只算「該出席的」：已排定的尚未發生、已取消的是提前取消，都不算心理師未完成；
+        // 也避免查詢區間延伸到未來時，兩個畫面的比率不一致
+        var totalApts = completed + noShow;
 
         var notes = await _db.SessionNotes
             .Where(n => n.TherapistUserId == therapistUserId
