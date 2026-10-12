@@ -18,10 +18,10 @@ public class User
     [Column("username")]
     public string Username { get; set; } = string.Empty;
 
-    [Required]
+    /// <summary>人員帳號必填（建立時驗證）；個案帳號沒有提供時為 null，不填假地址</summary>
     [MaxLength(200)]
     [Column("email")]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
 
     [Required]
     [MaxLength(200)]
