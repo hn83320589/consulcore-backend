@@ -109,4 +109,16 @@ public class SoftDeleteTests(ConsulCoreApiFactory factory) : IClassFixture<Consu
 
         Assert.Equal(HttpStatusCode.BadRequest, delete.StatusCode);
     }
+
+    [Fact]
+    public async Task Deleted_therapist_is_left_out_of_the_metrics_comparison()
+    {
+        var clinic = await ClinicScenario.CreateAsync(_api, "sdu3", expand: false);
+        await DeleteAsync(clinic.OwnerToken, $"/api/users/{clinic.TherapistUserId}");
+
+        var comparison = await ApiTestClient.ReadDataAsync(await _api.SendAsync(HttpMethod.Get,
+            "/api/performance-reviews/metrics-comparison?startDate=2026-01-01&endDate=2026-12-31", clinic.OwnerToken, "owner"));
+
+        Assert.DoesNotContain(comparison.EnumerateArray(), m => m.GetProperty("therapistUserId").GetInt32() == clinic.TherapistUserId);
+    }
 }

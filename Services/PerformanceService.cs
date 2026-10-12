@@ -218,7 +218,7 @@ public class PerformanceService
     public async Task<List<TherapistMetricsDto>> GetMetricsComparisonAsync(DateOnly startDate, DateOnly endDate)
     {
         var therapistIds = await _db.Users
-            .Where(u => u.UserRoles.Any(ur => ur.Role.Name == Roles.Therapist))
+            .Where(u => !u.IsDeleted && u.UserRoles.Any(ur => ur.Role.Name == Roles.Therapist))
             .Select(u => u.Id).ToListAsync();
 
         var results = new List<TherapistMetricsDto>();
