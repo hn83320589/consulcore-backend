@@ -11482,12 +11482,12 @@
           },
           "appointmentCompletionRate": {
             "type": "number",
-            "description": "預約完成率（%）",
+            "description": "預約完成率（%）：已完成 ÷ 已有結果的預約（不含仍為已排定者）",
             "format": "double"
           },
           "noShowRate": {
             "type": "number",
-            "description": "未到率（%）",
+            "description": "未到率（%）：未到 ÷ 已有結果的預約（不含仍為已排定者）",
             "format": "double"
           },
           "avgNoteDelayHours": {
