@@ -1,16 +1,16 @@
 # ConsulCore 前後端介接契約（前端開發指南）
 
 > 對象：`consulcore-frontend`（Vue 3 + TypeScript）開發者 / Claude Code
-> 目的：讓前端照著這份「唯一事實來源」開發，避免與後端資料結構對不上。
-> 來源：直接從後端 `.NET 10` 程式碼萃取（Controllers / DTOs / Models / Middleware）。
-> 最後同步：2026-08-02。後端有異動時，以程式碼與此文件為準，勿憑印象猜測欄位。
+> 目的：說明 openapi.json 表達不了的介接規則（認證流程、權限、錯誤語意、端點行為）。
+> 欄位、型別、enum 與欄位說明：見 repo 根目錄的 `openapi.json`（DTO 上的 `///` 註解會成為欄位 description）。
+> 最後同步：2026-10-12（Phase 4：型別改由 openapi.json 提供）。
 
 > 📣 **2026-08-15 有一批安全性異動需要前端確認** → 請先看 [`backend-changes-for-frontend.md`](./backend-changes-for-frontend.md)
 > （其中 **P0-1『form-submissions 補權限閘』需前端回覆**，其餘多為不影響前端或放寬）。
 
 **使用原則**
-- 所有型別以本文件的 **TypeScript 定義**為準，直接複製到前端型別檔，欄位對不上時 TS 會編譯報錯——這正是防呆機制。
-- 列舉（enum）值必須**一字不差**（全小寫 / snake_case），例如 `follow_up`、`no_show`、`in_app`、`fixed_amount`。
+- **型別與 enum 以 repo 根目錄的 `openapi.json` 為準**：它由 `OpenApiContractTests` 保證與程式碼一致，前端以 openapi-typescript 產生型別（見前端 CLAUDE.md）。本文件不再列欄位。
+- 本文件只寫 spec 表達不了的事：認證流程、權限、錯誤語意、各端點的行為與限制。
 - 開發環境另有 Swagger UI：`http://localhost:5037/swagger`（僅開發環境開放），可作互動式對照。
 
 ---
@@ -211,91 +211,53 @@ performance.view  performance.manage  org.settings
 
 ---
 
-## 6. 列舉（Enum）字串值 — 最容易對錯，務必照抄
+## 6. 列舉（Enum）字串值
 
-後端所有 enum 以**字串**儲存。前端建議用 TS union type 或 const 物件鎖定合法值。
+後端所有 enum 以**字串**儲存，可用值由 `openapi.json` 的 `enum` 提供（前端產生的型別即為字面值聯集，不必手抄）。
+值一律全小寫 / snake_case，例如 `follow_up`、`no_show`、`in_app`、`fixed_amount`。
 
-```ts
-// 預約
-type SessionType = 'individual' | 'couple' | 'family';           // 預設 individual
-type VisitType   = 'initial' | 'follow_up';                      // 預設 follow_up
-type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show'; // 預設 scheduled
+建立時省略該欄位的預設值：
 
-// 個案
-type ClientStatus = 'pending' | 'active' | 'suspended' | 'closed';           // 預設 pending
-type TherapistClientStatus = 'active' | 'transferred' | 'closed';            // 預設 active
-
-// 同意書
-type ConsentTriggerEvent = 'manual' | 'first_visit' | 'annual_renewal' | 'service_change'; // 預設 manual
-type ConsentRecordStatus = 'pending' | 'signed' | 'voided';                  // 預設 pending
-
-// 排班 / 常態預約
-type SlotStatus = 'available' | 'reserved' | 'blocked' | 'cancelled';        // 預設 available
-type SeriesFrequency = 'weekly' | 'biweekly';                                // 預設 weekly
-type SeriesStatus = 'active' | 'pending_confirmation' | 'ended';             // 預設 active
-
-// 動態表單 / 晤談紀錄
-type FieldType = 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'number' | 'scale'; // 預設 text
-type FormTemplateType = 'intake_assessment' | 'custom';                      // 預設 intake_assessment
-type SessionNoteType = 'session' | 'closure';                                // 預設 session
-type SessionNoteFormat = 'soap' | 'free_text';                               // 預設 soap
-type PhraseCategory = 'subjective' | 'objective' | 'assessment' | 'plan' | 'general'; // 預設 general
-type MemoCategory = 'personality' | 'trigger' | 'preference' | 'family' | 'other';    // 預設 other
-
-// 收費
-type PaymentMethod = 'cash' | 'transfer' | 'credit_card' | 'line_pay' | 'other';     // 預設 cash
-type PaymentType = 'single_session' | 'package_purchase';                    // 預設 single_session
-type PaymentStatus = 'paid' | 'pending' | 'refunded' | 'waived';             // 預設 pending
-type DiscountType = 'percentage' | 'fixed_amount';                           // 預設 percentage
-type ClientPackageStatus = 'active' | 'expired' | 'completed';               // 預設 active
-
-// 通知
-type NotificationEventType =
-  | 'account_created' | 'appointment_created' | 'appointment_cancelled'
-  | 'appointment_reminder' | 'therapist_leave' | 'series_renewal'
-  | 'package_low' | 'package_expiring';
-type NotificationChannel = 'email' | 'sms' | 'in_app';                       // 預設 in_app
-type NotificationStatus = 'queued' | 'sent' | 'failed' | 'read';             // 預設 queued
-
-// 考核 / 違規
-type ReviewVisibility = 'hidden' | 'visible';                               // 預設 hidden
-type ViolationSeverity = 'low' | 'medium' | 'high' | 'critical';            // 預設 low
-type ViolationStatus = 'open' | 'resolved' | 'dismissed';                   // 預設 open
-```
+| 型別 | 預設 |
+|------|------|
+| `SessionType` | `individual` |
+| `VisitType` | `follow_up` |
+| `AppointmentStatus` | `scheduled` |
+| `ClientStatus` | `pending` |
+| `TherapistClientStatus` | `active` |
+| `ConsentTriggerEvent` | `manual` |
+| `ConsentRecordStatus` | `pending` |
+| `SlotStatus` | `available` |
+| `SeriesFrequency` | `weekly` |
+| `SeriesStatus` | `active` |
+| `FieldType` | `text` |
+| `FormTemplateType` | `intake_assessment` |
+| `SessionNoteType` | `session` |
+| `SessionNoteFormat` | `soap` |
+| `PhraseCategory` | `general` |
+| `MemoCategory` | `other` |
+| `PaymentMethod` | `cash` |
+| `PaymentType` | `single_session` |
+| `PaymentStatus` | `pending` |
+| `DiscountType` | `percentage` |
+| `ClientPackageStatus` | `active` |
+| `NotificationChannel` | `in_app` |
+| `NotificationStatus` | `queued` |
+| `ReviewVisibility` | `hidden` |
+| `ViolationSeverity` | `low` |
+| `ViolationStatus` | `open` |
 
 ---
 
-## 7. 端點與型別參考（依領域）
+## 7. 端點參考（依領域）
 
 > 慣例：
+> - **欄位型別以 `openapi.json` 為準**（前端由 openapi-typescript 產生）。下表的 `XxxRequest` / `XxxResponse` 對應 spec 中的 `XxxDto` / `XxxResponseDto`。
 > - 所有 `organizationId` / `userId` / `reviewerId` 由後端從 JWT 取得，**不放在 request body**。
 > - 除 Auth 外所有端點需 `Authorization: Bearer` 與 `X-Active-Role`。
 > - 下表「Policy」為後端授權所需權限；前端用 `/me` 的 `permissions` 判斷是否顯示對應功能。Response 皆包在 `ApiResponse<T>`，下方標的是 `T`。
 
 ### 7.1 使用者 User（`/api/users`，Policy: staff.manage）
-
-```ts
-interface CreateUserRequest {
-  username: string;    // 必填, ≤50
-  email: string;       // 必填, email, ≤200
-  password: string;    // 必填, 8–100
-  displayName: string; // 必填, ≤50
-  phone?: string | null;
-  roles: string[];     // 必填, 至少 1 個角色名
-}
-interface UpdateUserRequest {   // 皆選填
-  email?: string | null;
-  displayName?: string | null;
-  phone?: string | null;
-  roles?: string[] | null;
-}
-interface ResetPasswordRequest { newPassword: string; } // 8–100
-interface UserResponse {
-  id: number; username: string; email: string; displayName: string;
-  phone?: string | null; isActive: boolean; roles: string[];
-  createdAt: string; updatedAt: string;
-}
-```
 
 | Method | 路由 | Body | Response |
 |--------|------|------|----------|
@@ -309,58 +271,12 @@ interface UserResponse {
 
 ### 7.2 角色權限 Role（`/api/roles`，Policy: staff.manage）
 
-```ts
-interface UpdateRolePermissionsRequest { permissionCodes: string[]; }
-interface RoleResponse {
-  id: number; name: string; description?: string | null;
-  isSystemDefault: boolean; permissions: string[]; // 權限碼
-}
-```
-
 | Method | 路由 | Body | Response |
 |--------|------|------|----------|
 | GET | `/api/roles` | — | `RoleResponse[]` |
 | PUT | `/api/roles/{id}/permissions` | `UpdateRolePermissionsRequest` | `RoleResponse` |
 
 ### 7.3 個案 ClientProfile（`/api/client-profiles`）
-
-```ts
-interface CreateClientProfileRequest {
-  name: string;                 // 必填（加密儲存）
-  idNumber?: string | null;
-  gender?: string | null;
-  dateOfBirth?: string | null;  // "yyyy-MM-dd"
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
-  emergencyContactName?: string | null;
-  emergencyContactPhone?: string | null;
-  emergencyContactRelationship?: string | null;
-  occupation?: string | null;
-  referralSource?: string | null;
-  notes?: string | null;
-  medicalHistory?: string | null;
-  createAccount: boolean;       // true=同時建個案帳號（帳密見回應的 initialCredentials，只回傳一次）
-  therapistUserId?: number | null; // 建檔時指派心理師
-}
-// UpdateClientProfileRequest：同上前 14 個欄位，皆選填，無 createAccount/therapistUserId
-interface ChangeStatusRequest { status: ClientStatus; }
-interface AssignTherapistRequest { therapistUserId: number; }
-interface TransferTherapistRequest { newTherapistUserId: number; reason?: string | null; }
-
-interface TherapistInfo { therapistUserId: number; therapistName: string; status: string; assignedAt: string; }
-interface ClientProfileResponse {
-  id: number; name: string;
-  idNumber?: string | null; gender?: string | null; dateOfBirth?: string | null;
-  phone?: string | null; email?: string | null; address?: string | null;
-  emergencyContactName?: string | null; emergencyContactPhone?: string | null;
-  emergencyContactRelationship?: string | null; occupation?: string | null;
-  referralSource?: string | null; notes?: string | null; medicalHistory?: string | null;
-  status: ClientStatus; userId?: number | null; mustChangePassword: boolean;
-  initialCredentials?: { username: string; password: string }; // 只出現在「建立附帳號個案」的回應
-  therapists: TherapistInfo[]; createdAt: string; updatedAt: string;
-}
-```
 
 | Method | 路由 | Policy | Body / Query | Response |
 |--------|------|--------|--------------|----------|
@@ -383,31 +299,6 @@ interface ClientProfileResponse {
 
 ### 7.4 同意書 Consent（`/api/consent-templates`、`/api/consent-records`）
 
-```ts
-interface CreateConsentTemplateRequest { title: string; content: string; triggerEvent?: ConsentTriggerEvent; }
-interface UpdateConsentTemplateRequest { title?: string | null; content?: string | null; triggerEvent?: ConsentTriggerEvent | null; isActive?: boolean | null; }
-interface ConsentTemplateResponse {
-  id: number; title: string; content: string; version: number;
-  triggerEvent: ConsentTriggerEvent; isActive: boolean; createdAt: string; updatedAt: string;
-}
-// 更新 content 時後端會自動 version++；舊簽署紀錄保留當時快照不受影響。
-
-interface SignConsentRequest {
-  consentTemplateId: number; clientProfileId: number;
-  signatureImage?: string | null; // Base64
-  signedRemotely: boolean;
-}
-interface VoidConsentRequest { reason: string; }
-interface ConsentRecordResponse {
-  id: number; consentTemplateId: number; templateTitle: string;
-  clientProfileId: number; clientName: string;
-  contentSnapshot: string; templateVersion: number;
-  signatureImage?: string | null; signedRemotely: boolean;
-  status: ConsentRecordStatus; signedAt?: string | null;
-  voidedAt?: string | null; voidReason?: string | null; createdAt: string;
-}
-```
-
 | Method | 路由 | Policy | Body | Response |
 |--------|------|--------|------|----------|
 | GET | `/api/consent-templates` | consent.view | — | `ConsentTemplateResponse[]` |
@@ -423,14 +314,6 @@ interface ConsentRecordResponse {
 
 ### 7.5 診間 Room（`/api/rooms`，Policy: room.manage）
 
-```ts
-interface CreateRoomRequest { name: string; }
-interface UpdateRoomRequest { name?: string | null; isActive?: boolean | null; }
-interface AssignTherapistToRoomRequest { therapistUserId: number; }
-interface TherapistRoomInfo { therapistUserId: number; therapistName: string; assignedAt: string; }
-interface RoomResponse { id: number; name: string; isActive: boolean; therapists: TherapistRoomInfo[]; createdAt: string; updatedAt: string; }
-```
-
 | Method | 路由 | Body | Response |
 |--------|------|------|----------|
 | GET | `/api/rooms` | — | `RoomResponse[]` |
@@ -443,29 +326,6 @@ interface RoomResponse { id: number; name: string; isActive: boolean; therapists
 | DELETE | `/api/rooms/{id}/therapist/{therapistUserId}` | — | `RoomResponse` |
 
 ### 7.6 排班 Schedule（`/api/schedule-templates`、`/api/schedule-slots`）
-
-```ts
-interface CreateScheduleTemplateRequest {
-  therapistUserId: number; dayOfWeek: number; // 0–6（0=週日）
-  startTime: string; endTime: string;         // "HH:mm"
-  slotDuration?: number;                       // 分鐘，10–120，預設 50
-}
-interface UpdateScheduleTemplateRequest { startTime?: string | null; endTime?: string | null; slotDuration?: number | null; isActive?: boolean | null; }
-interface ScheduleTemplateResponse {
-  id: number; therapistUserId: number; therapistName: string; dayOfWeek: number;
-  startTime: string; endTime: string; slotDuration: number; isActive: boolean; createdAt: string; updatedAt: string;
-}
-
-interface ExpandScheduleRequest { startDate: string; endDate: string; } // "yyyy-MM-dd"
-interface ManualExpandRequest { year: number; month: number; }
-interface BlockSlotRequest { note?: string | null; }
-interface ExpandResult { createdCount: number; skippedCount: number; warnings: string[]; }
-interface ScheduleSlotResponse {
-  id: number; therapistUserId: number; therapistName: string;
-  roomId?: number | null; roomName?: string | null;
-  date: string; startTime: string; endTime: string; status: SlotStatus; note?: string | null;
-}
-```
 
 | Method | 路由 | Policy | Body / Query | Response |
 |--------|------|--------|--------------|----------|
@@ -485,38 +345,6 @@ interface ScheduleSlotResponse {
 > - **封鎖已預約時段**：若該時段已有預約，`block` 會取消該預約並通知個案（therapist_leave）。前端封鎖前宜提示使用者。
 
 ### 7.7 預約 Appointment（`/api/appointments`、`/api/appointment-series`）
-
-```ts
-interface CreateAppointmentRequest {
-  clientProfileId: number; scheduleSlotId: number;
-  sessionType?: SessionType; visitType?: VisitType; note?: string | null;
-}
-interface RescheduleRequest { newScheduleSlotId: number; }
-interface AppointmentNoteRequest { note?: string | null; } // cancel 用，可整個省略
-interface AppointmentResponse {
-  id: number; clientProfileId: number; clientName: string;
-  therapistUserId: number; therapistName: string;
-  roomId?: number | null; roomName?: string | null;
-  scheduleSlotId: number; date: string; startTime: string; endTime: string;
-  seriesId?: number | null; sessionType: SessionType; visitType: VisitType;
-  status: AppointmentStatus; note?: string | null;
-  hints: string[];   // 溫和提示（BR-06），如個案預約非慣用心理師；空陣列代表無提示
-  createdAt: string;
-}
-
-interface CreateAppointmentSeriesRequest {
-  clientProfileId: number; therapistUserId: number;
-  dayOfWeek: number; startTime: string;      // "HH:mm"
-  frequency?: SeriesFrequency; months?: number; // 1–3（BR-07 上限 3 個月）
-}
-interface RenewSeriesRequest { months?: number; } // 1–3
-interface AppointmentSeriesResponse {
-  id: number; clientProfileId: number; clientName: string;
-  therapistUserId: number; therapistName: string;
-  dayOfWeek: number; startTime: string; frequency: SeriesFrequency; status: SeriesStatus;
-  expiresAt: string; totalAppointments: number; remainingAppointments: number; createdAt: string;
-}
-```
 
 | Method | 路由 | Policy | Body / Query | Response |
 |--------|------|--------|--------------|----------|
@@ -543,34 +371,6 @@ interface AppointmentSeriesResponse {
 
 巢狀結構：Template → Section[] → Field[]；Submission → Value[]。
 
-```ts
-interface CreateFormFieldRequest {
-  label: string; fieldType?: FieldType; // 預設 text
-  options?: string | null;              // JSON 字串（select/radio/checkbox 選項）
-  isRequired: boolean; sortOrder: number;
-  placeholder?: string | null; validationRules?: string | null; // JSON 字串
-}
-interface CreateFormSectionRequest { title: string; sortOrder: number; isRequired?: boolean; fields?: CreateFormFieldRequest[]; }
-interface CreateFormTemplateRequest { name: string; type?: FormTemplateType; sections?: CreateFormSectionRequest[]; }
-interface UpdateFormTemplateRequest { name?: string | null; isActive?: boolean | null; sections?: CreateFormSectionRequest[] | null; } // 傳 sections 會整組覆蓋並 version++
-
-interface FormFieldResponse { id: number; label: string; fieldType: FieldType; options?: string | null; isRequired: boolean; sortOrder: number; placeholder?: string | null; validationRules?: string | null; }
-interface FormSectionResponse { id: number; title: string; sortOrder: number; isRequired: boolean; fields: FormFieldResponse[]; }
-interface FormTemplateResponse {
-  id: number; name: string; type: FormTemplateType; isSystemDefault: boolean;
-  version: number; isActive: boolean; sections: FormSectionResponse[]; createdAt: string; updatedAt: string;
-}
-
-interface FieldValueRequest { fieldId: number; value?: string | null; } // value 為 JSON 字串
-interface SubmitFormRequest { templateId: number; clientProfileId: number; values: FieldValueRequest[]; }
-interface FieldValueResponse { fieldId: number; fieldLabel: string; fieldType: FieldType; value?: string | null; }
-interface FormSubmissionResponse {
-  id: number; templateId: number; templateName: string; templateVersion: number;
-  clientProfileId: number; clientName: string; therapistUserId: number; therapistName: string;
-  submittedAt: string; values: FieldValueResponse[];
-}
-```
-
 | Method | 路由 | Body | Response |
 |--------|------|------|----------|
 | GET | `/api/form-templates` | — | `FormTemplateResponse[]` |
@@ -589,28 +389,6 @@ interface FormSubmissionResponse {
 
 ### 7.9 晤談紀錄 SessionNote（`/api/session-notes`）
 
-```ts
-interface CreateSessionNoteRequest {
-  clientProfileId: number; appointmentId?: number | null;
-  type?: SessionNoteType; format?: SessionNoteFormat;
-  soapS?: string | null; soapO?: string | null; soapA?: string | null; soapP?: string | null;
-  freeTextContent?: string | null;
-}
-interface UpdateSessionNoteRequest { // 僅內容，不含 type/format
-  soapS?: string | null; soapO?: string | null; soapA?: string | null; soapP?: string | null;
-  freeTextContent?: string | null;
-}
-interface SessionNoteResponse {
-  id: number; clientProfileId: number; clientName: string;
-  therapistUserId: number; therapistName: string; appointmentId?: number | null;
-  type: SessionNoteType; format: SessionNoteFormat;
-  soapS?: string | null; soapO?: string | null; soapA?: string | null; soapP?: string | null;
-  freeTextContent?: string | null; intakeSummaryImported: boolean;
-  isLocked: boolean; lockedAt?: string | null; lockedBy?: number | null;
-  createdAt: string; updatedAt: string;
-}
-```
-
 | Method | 路由 | Policy | Body | Response |
 |--------|------|--------|------|----------|
 | POST | `/api/session-notes` | session.create | `CreateSessionNoteRequest` | `SessionNoteResponse` |
@@ -628,21 +406,6 @@ interface SessionNoteResponse {
 
 ### 7.10 常用語 Phrase / 個案備忘 Memo
 
-```ts
-interface CreatePhraseTemplateRequest { category?: PhraseCategory; title: string; content: string; sortOrder: number; }
-interface UpdatePhraseTemplateRequest { category?: PhraseCategory | null; title?: string | null; content?: string | null; sortOrder?: number | null; }
-interface PhraseTemplateResponse { id: number; category: PhraseCategory; title: string; content: string; sortOrder: number; createdAt: string; }
-
-interface CreateClientMemoRequest { clientProfileId: number; category?: MemoCategory; content: string; }
-interface UpdateClientMemoRequest { category?: MemoCategory | null; content?: string | null; }
-interface ClientMemoResponse {
-  id: number; clientProfileId: number; therapistUserId: number; therapistName: string;
-  category: MemoCategory; content: string;
-  isEditable: boolean; // true=當前心理師可編輯；false=他人所寫（BR-16 唯讀）
-  createdAt: string; updatedAt: string;
-}
-```
-
 | Method | 路由 | Policy | Body | Response |
 |--------|------|--------|------|----------|
 | GET | `/api/phrase-templates` | (登入) | — | `PhraseTemplateResponse[]`（僅自己的） |
@@ -659,49 +422,6 @@ interface ClientMemoResponse {
 ### 7.11 收費 Billing（費率 / 套餐 / 折扣 / 收款 / 報表）
 
 Policy：檢視類 `billing.view`、建立 `billing.create`、更新 `billing.update`、退費 `billing.refund`。
-
-```ts
-interface CreateFeeScheduleRequest {
-  name: string; sessionType?: SessionType; visitType?: VisitType;
-  therapistUserId?: number | null; // null=機構通用；查找時心理師專屬優先（BR-09）
-  amount: number;
-}
-interface UpdateFeeScheduleRequest { name?: string | null; amount?: number | null; isActive?: boolean | null; }
-interface FeeScheduleResponse { id: number; name: string; sessionType: SessionType; visitType: VisitType; therapistUserId?: number | null; therapistName?: string | null; amount: number; currency: string; isActive: boolean; }
-
-interface CreatePackageRequest { name: string; sessionType?: SessionType; totalSessions: number; totalAmount: number; validDays?: number; }
-interface UpdatePackageRequest { name?: string | null; totalAmount?: number | null; validDays?: number | null; isActive?: boolean | null; }
-interface PackageResponse { id: number; name: string; sessionType: SessionType; totalSessions: number; totalAmount: number; perSessionAmount: number; validDays: number; isActive: boolean; }
-
-// 折扣：已改為可綁定心理師（therapist 層級）
-interface CreateDiscountRequest {
-  name: string; discountType?: DiscountType;
-  percentageValue?: number | null; fixedAmount?: number | null;
-  applicableRole?: string | null;    // 綁角色自動套用（BR-11）
-  therapistUserId?: number | null;   // null=機構通用折扣；指定=心理師專屬（專屬優先）
-}
-interface UpdateDiscountRequest { name?: string | null; percentageValue?: number | null; fixedAmount?: number | null; isActive?: boolean | null; } // 注意：Update 不含 therapistUserId，綁定只在建立時設
-interface AssignDiscountRequest { clientProfileId: number; discountId: number; note?: string | null; }
-interface DiscountResponse { id: number; name: string; discountType: DiscountType; percentageValue?: number | null; fixedAmount?: number | null; applicableRole?: string | null; therapistUserId?: number | null; isActive: boolean; }
-
-interface PurchasePackageRequest { clientProfileId: number; packageId: number; paymentMethod?: PaymentMethod; }
-interface ConfirmPaymentRequest { paymentMethod?: PaymentMethod; }
-interface RefundRequest { note?: string | null; }
-interface PaymentRecordResponse {
-  id: number; clientProfileId: number; clientName: string;
-  appointmentId?: number | null; clientPackageId?: number | null;
-  discountId?: number | null; discountName?: string | null;
-  originalAmount: number; finalAmount: number;
-  paymentMethod: PaymentMethod; paymentType: PaymentType; status: PaymentStatus;
-  note?: string | null; paidAt?: string | null; createdAt: string;
-}
-interface ClientPackageResponse {
-  id: number; clientProfileId: number; clientName: string;
-  packageId: number; packageName: string;
-  sessionsUsed: number; sessionsRemaining: number; status: ClientPackageStatus;
-  purchasedAt: string; expiresAt: string;
-}
-```
 
 | Method | 路由 | Policy | Body | Response |
 |--------|------|--------|------|----------|
@@ -731,13 +451,6 @@ interface ClientPackageResponse {
 
 **報表 Reports（`/api/reports`，Policy: billing.view）**
 
-```ts
-interface MonthlyRevenue { year: number; month: number; totalRevenue: number; totalTransactions: number; paidAmount: number; pendingAmount: number; refundedAmount: number; waivedAmount: number; }
-interface TherapistRevenue { therapistUserId: number; therapistName: string; totalRevenue: number; totalSessions: number; }
-interface PackageRemaining { clientPackageId: number; clientName: string; packageName: string; sessionsRemaining: number; expiresAt: string; }
-interface PackageStats { activePackages: number; expiredPackages: number; completedPackages: number; totalPackageRevenue: number; lowRemaining: PackageRemaining[]; }
-```
-
 | Method | 路由 | Query | Response |
 |--------|------|-------|----------|
 | GET | `/api/reports/monthly-revenue` | `?year=&month=` | `MonthlyRevenue` |
@@ -746,15 +459,6 @@ interface PackageStats { activePackages: number; expiredPackages: number; comple
 | GET | `/api/reports/package-stats` | — | `PackageStats` |
 
 ### 7.12 通知 Notification
-
-```ts
-interface CreateNotificationTemplateRequest { eventType: NotificationEventType; channel?: NotificationChannel; subject: string; bodyTemplate: string; isRequired: boolean; }
-interface UpdateNotificationTemplateRequest { subject?: string | null; bodyTemplate?: string | null; isActive?: boolean | null; }
-interface NotificationTemplateResponse { id: number; eventType: NotificationEventType; channel: NotificationChannel; subject: string; bodyTemplate: string; isRequired: boolean; isActive: boolean; }
-interface NotificationLogResponse { id: number; channel: NotificationChannel; subject: string; body: string; status: NotificationStatus; sentAt?: string | null; readAt?: string | null; createdAt: string; }
-interface UpdatePreferenceRequest { eventType: NotificationEventType; emailEnabled: boolean; smsEnabled: boolean; inAppEnabled: boolean; }
-interface PreferenceResponse { eventType: NotificationEventType; emailEnabled: boolean; smsEnabled: boolean; inAppEnabled: boolean; }
-```
 
 | Method | 路由 | Policy | Body | Response |
 |--------|------|--------|------|----------|
@@ -772,40 +476,6 @@ interface PreferenceResponse { eventType: NotificationEventType; emailEnabled: b
 > ⚠️ **必要通知不可關閉（BR-12）**：若某 `eventType` 有 `isRequired` 範本，嘗試把任一管道設為 `false` 更新偏好 → 回 **400**，message：`此為必要通知，無法關閉`。前端對必要通知應把開關 disable，避免使用者誤觸。
 
 ### 7.13 考核 PerformanceReview（`/api/performance-reviews`）
-
-```ts
-interface CreatePerformanceReviewRequest {
-  therapistUserId: number; period: string;
-  professionalScore: number; clientFeedbackScore: number; teamworkScore: number; overallScore: number; // 1–5
-  comment?: string | null;
-}
-interface UpdatePerformanceReviewRequest { professionalScore?: number | null; clientFeedbackScore?: number | null; teamworkScore?: number | null; overallScore?: number | null; comment?: string | null; }
-interface SetVisibilityRequest { visibility: ReviewVisibility; visibleFrom?: string | null; visibleUntil?: string | null; }
-interface PerformanceReviewResponse {
-  id: number; therapistUserId: number; therapistName: string;
-  reviewerId: number; reviewerName: string; period: string;
-  professionalScore: number; clientFeedbackScore: number; teamworkScore: number; overallScore: number;
-  comment?: string | null; // BR-18：非 Owner 檢視時後端會回 null
-  visibility: ReviewVisibility; visibleFrom?: string | null; visibleUntil?: string | null; createdAt: string;
-}
-// 量化指標（8 項 metric + 2 識別欄位）
-interface TherapistMetrics {
-  therapistUserId: number; therapistName: string;
-  appointmentCompletionRate: number; // 預約完成率 %
-  noShowRate: number;                 // 未到率 %
-  avgNoteDelayHours: number;          // 紀錄及時性（晤談後平均時差，小時）
-  noteLockRate: number;               // 紀錄鎖定率 %
-  clientRetentionRate: number;        // 個案留存率 %
-  monthlySessionCount: number;        // 月諮商次數
-  monthlySessionHours: number;        // 月諮商時數
-  paymentCompletionRate: number;      // 收費完成率 %
-}
-// 單一指標的時間趨勢
-interface MetricsTrend {
-  metric: string;                     // 指標鍵（同 TherapistMetrics 的欄位名，如 'appointmentCompletionRate'）
-  points: { period: string; value: number }[]; // period 為 "yyyy-MM"
-}
-```
 
 有效的 `metric` 鍵（對應 `TherapistMetrics` 的量化欄位）：`appointmentCompletionRate`、`noShowRate`、`avgNoteDelayHours`、`noteLockRate`、`clientRetentionRate`、`monthlySessionCount`、`monthlySessionHours`、`paymentCompletionRate`。傳未知鍵回 400。
 
@@ -825,13 +495,6 @@ interface MetricsTrend {
 
 ### 7.14 違規 Violation（`/api/violation-records`，Policy: performance.manage）
 
-```ts
-interface CreateViolationRecordRequest { therapistUserId: number; incidentDate: string; severity?: ViolationSeverity; description: string; actionTaken?: string | null; }
-interface UpdateViolationRecordRequest { severity?: ViolationSeverity | null; description?: string | null; actionTaken?: string | null; }
-interface ResolveViolationRequest { actionTaken: string; }
-interface ViolationRecordResponse { id: number; therapistUserId: number; therapistName: string; reportedBy: number; incidentDate: string; severity: ViolationSeverity; description: string; actionTaken?: string | null; status: ViolationStatus; resolvedAt?: string | null; createdAt: string; }
-```
-
 | Method | 路由 | Body | Response |
 |--------|------|------|----------|
 | GET | `/api/violation-records` | — | `ViolationRecordResponse[]` |
@@ -842,10 +505,6 @@ interface ViolationRecordResponse { id: number; therapistUserId: number; therapi
 | DELETE | `/api/violation-records/{id}` | — | `{}` |
 
 ### 7.15 稽核 AuditLog（`/api/audit-logs`，Policy: audit.view）
-
-```ts
-interface AuditLogResponse { id: number; userId: number; userName?: string | null; action: string; resourceType: string; resourceId: number; description?: string | null; changes?: string | null; ipAddress?: string | null; createdAt: string; }
-```
 
 | Method | 路由 | Query | Response |
 |--------|------|-------|----------|
@@ -897,5 +556,5 @@ interface AuditLogResponse { id: number; userId: number; userName?: string | nul
 
 ---
 
-_本文件由後端程式碼萃取產生。若後端 DTO/enum/路由有變動，請同步更新此文件；前端 Claude Code 開發時以此為準。_
+_欄位與 enum 變動由 `openapi.json` 承接；端點行為、權限或錯誤語意有變動時，請同步更新此文件。_
 

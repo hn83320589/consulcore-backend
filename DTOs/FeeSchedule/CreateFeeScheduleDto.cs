@@ -11,6 +11,7 @@ public class CreateFeeScheduleDto
     [MaxLength(20)] public string SessionType { get; set; } = "individual";
     [ConstantValues(typeof(AppointmentVisitType))]
     [MaxLength(20)] public string VisitType { get; set; } = "follow_up";
+    /// <summary>null = 機構通用費率；查找時心理師專屬優先（BR-09）</summary>
     public int? TherapistUserId { get; set; }
     [Required] public decimal Amount { get; set; }
 }

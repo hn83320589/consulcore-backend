@@ -39,6 +39,7 @@ public class CreateFormFieldDto
     [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = "text";
 
+    /// <summary>JSON 字串（select / radio / checkbox 的選項）</summary>
     public string? Options { get; set; } // JSON
     public bool IsRequired { get; set; }
     public int SortOrder { get; set; }
@@ -46,5 +47,6 @@ public class CreateFormFieldDto
     [MaxLength(200)]
     public string? Placeholder { get; set; }
 
+    /// <summary>JSON 字串</summary>
     public string? ValidationRules { get; set; } // JSON
 }

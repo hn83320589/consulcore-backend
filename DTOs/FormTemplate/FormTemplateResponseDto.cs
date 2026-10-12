@@ -32,9 +32,11 @@ public class FormFieldResponseDto
     public string Label { get; set; } = string.Empty;
     [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = string.Empty;
+    /// <summary>JSON 字串（select / radio / checkbox 的選項）</summary>
     public string? Options { get; set; }
     public bool IsRequired { get; set; }
     public int SortOrder { get; set; }
     public string? Placeholder { get; set; }
+    /// <summary>JSON 字串</summary>
     public string? ValidationRules { get; set; }
 }

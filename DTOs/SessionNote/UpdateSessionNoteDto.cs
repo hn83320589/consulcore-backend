@@ -1,5 +1,6 @@
 namespace consulcore_backend.DTOs.SessionNote;
 
+/// <summary>只更新內容，不含 type / format</summary>
 public class UpdateSessionNoteDto
 {
     public string? SoapS { get; set; }

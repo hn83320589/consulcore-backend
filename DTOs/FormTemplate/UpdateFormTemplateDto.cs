@@ -9,8 +9,6 @@ public class UpdateFormTemplateDto
 
     public bool? IsActive { get; set; }
 
-    /// <summary>
-    /// 完整覆蓋 sections/fields，version++
-    /// </summary>
+    /// <summary>傳入時整組覆蓋並 version +1；null 表示不變更</summary>
     public List<CreateFormSectionDto>? Sections { get; set; }
 }

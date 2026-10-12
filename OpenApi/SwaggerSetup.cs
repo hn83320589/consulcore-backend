@@ -18,6 +18,8 @@ public static class SwaggerSetup
         options.SupportNonNullableReferenceTypes();
         options.SchemaFilter<NonNullablePropertiesRequiredFilter>();
         options.SchemaFilter<ConstantValuesSchemaFilter>();
+        // DTO 上的 /// 註解 → 欄位 description（前端產生的型別會帶成 JSDoc）
+        options.IncludeXmlComments(typeof(SwaggerSetup).Assembly);
 
         options.AddSecurityDefinition(BearerScheme, new OpenApiSecurityScheme
         {
