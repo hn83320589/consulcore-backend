@@ -730,6 +730,8 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
               "type": "integer",
               "format": "int32",
               "default": 1
@@ -739,6 +741,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32",
               "default": 50
@@ -1340,6 +1344,8 @@
             "name": "page",
             "in": "query",
             "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
               "type": "integer",
               "format": "int32",
               "default": 1
@@ -1349,6 +1355,8 @@
             "name": "pageSize",
             "in": "query",
             "schema": {
+              "maximum": 100,
+              "minimum": 1,
               "type": "integer",
               "format": "int32",
               "default": 50

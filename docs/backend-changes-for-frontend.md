@@ -296,6 +296,7 @@
 | 背景排程（套餐到期 `expire`、考核依排程開放 / 收回 `visibility_open` / `visibility_close`）寫入稽核；這類紀錄 `userId` 為 **null**、`userName` 為「系統」 | **無**：畫面只顯示 `userName`；`AuditLog.userId` 型別應放寬為 `number \| null` |
 | 刪除使用者 / 個案改為軟刪除：從清單與查詢消失（GET 單筆回 404），但預約、紀錄、收費等歷史仍顯示其姓名；附帳號的個案刪除後帳號無法登入；已刪除的帳號名稱不可再使用 | **無** |
 | `POST /api/appointments`：個案不存在、已刪除或屬於其他機構時回 **404**（原本不檢查） | **無**（前端只會帶本機構個案） |
+| `GET /api/audit-logs`、`GET /api/billing`：`page` 須 ≥ 1、`pageSize` 須介於 1–100，超出範圍回 **400** | **無**（前端固定 pageSize 50） |
 
 ### 5. ✅ 擁有者保護：新的 403 情境
 

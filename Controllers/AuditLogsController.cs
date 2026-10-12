@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.AuditLog;
 using consulcore_backend.Models;
@@ -19,8 +20,8 @@ public class AuditLogsController : ControllerBase
     public async Task<ActionResult<ApiResponse<List<AuditLogResponseDto>>>> GetLogs(
         [FromQuery] string? action, [FromQuery] string? resourceType,
         [FromQuery] int? userId, [FromQuery] DateTime? startDate,
-        [FromQuery] DateTime? endDate, [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50, [FromQuery] int? resourceId = null)
+        [FromQuery] DateTime? endDate, [FromQuery, Range(1, int.MaxValue)] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize)] int pageSize = Paging.DefaultPageSize, [FromQuery] int? resourceId = null)
     {
         var logs = await _service.GetLogsAsync(action, resourceType, userId, startDate, endDate, page, pageSize, resourceId);
         return ApiResponse<List<AuditLogResponseDto>>.Ok(logs);

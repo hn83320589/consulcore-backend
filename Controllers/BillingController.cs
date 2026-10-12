@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Billing;
 using consulcore_backend.Models;
@@ -70,7 +71,8 @@ public class BillingController : ControllerBase
     public async Task<ActionResult<ApiResponse<List<PaymentRecordResponseDto>>>> GetAll(
         [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId,
-        [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        [FromQuery] string? status, [FromQuery, Range(1, int.MaxValue)] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize)] int pageSize = Paging.DefaultPageSize)
     {
         var records = await _billingService.GetPaymentsAsync(
             startDate, endDate, clientProfileId, therapistUserId, status, page, pageSize);
