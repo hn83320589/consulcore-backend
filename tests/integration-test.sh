@@ -18,7 +18,7 @@ DB_PATH="${DB_PATH:-App_Data/consulcore.db}"
 SQLITE_BIN="${SQLITE_BIN:-sqlite3}"
 # 先確認檔案存在：sqlite3 開不存在的路徑會默默建一個空 DB，查詢錯誤又被 2>/dev/null 吞掉
 if [ ! -f "$DB_PATH" ]; then
-  echo "找不到 SQLite 資料庫：$DB_PATH（請先 dotnet run，或設定 DB_PATH）" >&2
+  echo "找不到 SQLite 資料庫：${DB_PATH}（請先 dotnet run，或設定 DB_PATH）" >&2
   exit 1
 fi
 DBQ="$SQLITE_BIN -noheader $DB_PATH"
