@@ -20,11 +20,13 @@ public class ErrorHandlingMiddlewareTests
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 
-    private static async Task<(int status, JsonElement body)> InvokeAsync(Exception ex, string environment = "Production")
+    private static async Task<(int status, JsonElement body)> InvokeAsync(
+        Exception ex, string environment = "Production", string? traceId = null)
     {
         var middleware = new ErrorHandlingMiddleware(_ => throw ex, new Env(environment),
             NullLogger<ErrorHandlingMiddleware>.Instance);
         var context = new DefaultHttpContext();
+        if (traceId != null) context.TraceIdentifier = traceId;
         context.Response.Body = new MemoryStream();
 
         await middleware.InvokeAsync(context);
@@ -70,5 +72,22 @@ public class ErrorHandlingMiddlewareTests
 
         Assert.Equal((int)HttpStatusCode.InternalServerError, status);
         Assert.DoesNotContain("connectionString", body.GetProperty("message").GetString());
+    }
+
+    // 使用者回報「伺服器發生錯誤」時，追蹤碼可以直接對到那一筆 log
+    [Fact]
+    public async Task Unexpected_error_message_includes_the_correlation_id()
+    {
+        var (_, body) = await InvokeAsync(new InvalidOperationException("boom"), traceId: "req-7f3a");
+
+        Assert.Contains("req-7f3a", body.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task Business_error_message_is_unchanged()
+    {
+        var (_, body) = await InvokeAsync(new BusinessRuleException("此時段已被預約"), traceId: "req-7f3a");
+
+        Assert.Equal("此時段已被預約", body.GetProperty("message").GetString());
     }
 }
