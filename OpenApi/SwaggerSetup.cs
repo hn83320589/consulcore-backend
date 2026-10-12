@@ -17,6 +17,7 @@ public static class SwaggerSetup
         // 前端產生的型別才不會每個欄位都是 optional
         options.SupportNonNullableReferenceTypes();
         options.SchemaFilter<NonNullablePropertiesRequiredFilter>();
+        options.SchemaFilter<ConstantValuesSchemaFilter>();
 
         options.AddSecurityDefinition(BearerScheme, new OpenApiSecurityScheme
         {

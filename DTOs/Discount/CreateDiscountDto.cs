@@ -1,10 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 
 namespace consulcore_backend.DTOs.Discount;
 
 public class CreateDiscountDto
 {
     [Required] [MaxLength(100)] public string Name { get; set; } = string.Empty;
+    [ConstantValues(typeof(DiscountTypes))]
     [MaxLength(20)] public string DiscountType { get; set; } = "percentage";
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }
@@ -25,6 +28,7 @@ public class DiscountResponseDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    [ConstantValues(typeof(DiscountTypes))]
     public string DiscountType { get; set; } = string.Empty;
     public decimal? PercentageValue { get; set; }
     public decimal? FixedAmount { get; set; }

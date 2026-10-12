@@ -6695,12 +6695,27 @@
             "nullable": true
           },
           "sessionType": {
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "visitType": {
+            "enum": [
+              "initial",
+              "follow_up"
+            ],
             "type": "string"
           },
           "status": {
+            "enum": [
+              "scheduled",
+              "completed",
+              "cancelled",
+              "no_show"
+            ],
             "type": "string"
           },
           "note": {
@@ -6820,9 +6835,18 @@
             "type": "string"
           },
           "frequency": {
+            "enum": [
+              "weekly",
+              "biweekly"
+            ],
             "type": "string"
           },
           "status": {
+            "enum": [
+              "active",
+              "pending_confirmation",
+              "ended"
+            ],
             "type": "string"
           },
           "expiresAt": {
@@ -7066,6 +7090,12 @@
         "properties": {
           "status": {
             "minLength": 1,
+            "enum": [
+              "pending",
+              "active",
+              "suspended",
+              "closed"
+            ],
             "type": "string"
           }
         },
@@ -7101,6 +7131,13 @@
             "type": "string"
           },
           "category": {
+            "enum": [
+              "personality",
+              "trigger",
+              "preference",
+              "family",
+              "other"
+            ],
             "type": "string"
           },
           "content": {
@@ -7218,6 +7255,11 @@
             "format": "int32"
           },
           "status": {
+            "enum": [
+              "active",
+              "expired",
+              "completed"
+            ],
             "type": "string"
           },
           "purchasedAt": {
@@ -7359,6 +7401,12 @@
             "nullable": true
           },
           "status": {
+            "enum": [
+              "pending",
+              "active",
+              "suspended",
+              "closed"
+            ],
             "type": "string"
           },
           "userId": {
@@ -7452,6 +7500,13 @@
         "type": "object",
         "properties": {
           "paymentMethod": {
+            "enum": [
+              "cash",
+              "transfer",
+              "credit_card",
+              "line_pay",
+              "other"
+            ],
             "type": "string"
           }
         },
@@ -7505,6 +7560,11 @@
             "type": "boolean"
           },
           "status": {
+            "enum": [
+              "pending",
+              "signed",
+              "voided"
+            ],
             "type": "string"
           },
           "signedAt": {
@@ -7612,6 +7672,12 @@
             "format": "int32"
           },
           "triggerEvent": {
+            "enum": [
+              "manual",
+              "first_visit",
+              "annual_renewal",
+              "service_change"
+            ],
             "type": "string"
           },
           "isActive": {
@@ -7703,10 +7769,19 @@
           },
           "sessionType": {
             "maxLength": 20,
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "visitType": {
             "maxLength": 20,
+            "enum": [
+              "initial",
+              "follow_up"
+            ],
             "type": "string"
           },
           "note": {
@@ -7748,6 +7823,10 @@
           },
           "frequency": {
             "maxLength": 20,
+            "enum": [
+              "weekly",
+              "biweekly"
+            ],
             "type": "string"
           },
           "months": {
@@ -7774,6 +7853,13 @@
           "category": {
             "maxLength": 30,
             "minLength": 1,
+            "enum": [
+              "personality",
+              "trigger",
+              "preference",
+              "family",
+              "other"
+            ],
             "type": "string"
           },
           "content": {
@@ -7876,6 +7962,12 @@
           },
           "triggerEvent": {
             "maxLength": 50,
+            "enum": [
+              "manual",
+              "first_visit",
+              "annual_renewal",
+              "service_change"
+            ],
             "type": "string"
           }
         },
@@ -7895,6 +7987,10 @@
           },
           "discountType": {
             "maxLength": 20,
+            "enum": [
+              "percentage",
+              "fixed_amount"
+            ],
             "type": "string"
           },
           "percentageValue": {
@@ -7936,10 +8032,19 @@
           },
           "sessionType": {
             "maxLength": 20,
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "visitType": {
             "maxLength": 20,
+            "enum": [
+              "initial",
+              "follow_up"
+            ],
             "type": "string"
           },
           "therapistUserId": {
@@ -7970,6 +8075,16 @@
           },
           "fieldType": {
             "maxLength": 30,
+            "enum": [
+              "text",
+              "textarea",
+              "select",
+              "radio",
+              "checkbox",
+              "date",
+              "number",
+              "scale"
+            ],
             "type": "string"
           },
           "options": {
@@ -8040,6 +8155,10 @@
           },
           "type": {
             "maxLength": 50,
+            "enum": [
+              "intake_assessment",
+              "custom"
+            ],
             "type": "string"
           },
           "sections": {
@@ -8064,10 +8183,25 @@
           "eventType": {
             "maxLength": 50,
             "minLength": 1,
+            "enum": [
+              "account_created",
+              "appointment_created",
+              "appointment_cancelled",
+              "appointment_reminder",
+              "therapist_leave",
+              "series_renewal",
+              "package_low",
+              "package_expiring"
+            ],
             "type": "string"
           },
           "channel": {
             "maxLength": 20,
+            "enum": [
+              "email",
+              "sms",
+              "in_app"
+            ],
             "type": "string"
           },
           "subject": {
@@ -8102,6 +8236,11 @@
           },
           "sessionType": {
             "maxLength": 20,
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "totalSessions": {
@@ -8182,6 +8321,13 @@
           "category": {
             "maxLength": 30,
             "minLength": 1,
+            "enum": [
+              "subjective",
+              "objective",
+              "assessment",
+              "plan",
+              "general"
+            ],
             "type": "string"
           },
           "title": {
@@ -8270,10 +8416,18 @@
           },
           "type": {
             "maxLength": 20,
+            "enum": [
+              "session",
+              "closure"
+            ],
             "type": "string"
           },
           "format": {
             "maxLength": 20,
+            "enum": [
+              "soap",
+              "free_text"
+            ],
             "type": "string"
           },
           "soapS": {
@@ -8364,6 +8518,12 @@
           },
           "severity": {
             "maxLength": 20,
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
             "type": "string"
           },
           "description": {
@@ -8481,6 +8641,10 @@
             "type": "string"
           },
           "discountType": {
+            "enum": [
+              "percentage",
+              "fixed_amount"
+            ],
             "type": "string"
           },
           "percentageValue": {
@@ -8653,9 +8817,18 @@
             "type": "string"
           },
           "sessionType": {
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "visitType": {
+            "enum": [
+              "initial",
+              "follow_up"
+            ],
             "type": "string"
           },
           "therapistUserId": {
@@ -8769,6 +8942,16 @@
             "type": "string"
           },
           "fieldType": {
+            "enum": [
+              "text",
+              "textarea",
+              "select",
+              "radio",
+              "checkbox",
+              "date",
+              "number",
+              "scale"
+            ],
             "type": "string"
           },
           "value": {
@@ -8796,6 +8979,16 @@
             "type": "string"
           },
           "fieldType": {
+            "enum": [
+              "text",
+              "textarea",
+              "select",
+              "radio",
+              "checkbox",
+              "date",
+              "number",
+              "scale"
+            ],
             "type": "string"
           },
           "options": {
@@ -8988,6 +9181,10 @@
             "type": "string"
           },
           "type": {
+            "enum": [
+              "intake_assessment",
+              "custom"
+            ],
             "type": "string"
           },
           "isSystemDefault": {
@@ -9395,6 +9592,11 @@
             "format": "int32"
           },
           "channel": {
+            "enum": [
+              "email",
+              "sms",
+              "in_app"
+            ],
             "type": "string"
           },
           "subject": {
@@ -9404,6 +9606,12 @@
             "type": "string"
           },
           "status": {
+            "enum": [
+              "queued",
+              "sent",
+              "failed",
+              "read"
+            ],
             "type": "string"
           },
           "sentAt": {
@@ -9470,9 +9678,24 @@
             "format": "int32"
           },
           "eventType": {
+            "enum": [
+              "account_created",
+              "appointment_created",
+              "appointment_cancelled",
+              "appointment_reminder",
+              "therapist_leave",
+              "series_renewal",
+              "package_low",
+              "package_expiring"
+            ],
             "type": "string"
           },
           "channel": {
+            "enum": [
+              "email",
+              "sms",
+              "in_app"
+            ],
             "type": "string"
           },
           "subject": {
@@ -9624,6 +9847,11 @@
             "type": "string"
           },
           "sessionType": {
+            "enum": [
+              "individual",
+              "couple",
+              "family"
+            ],
             "type": "string"
           },
           "totalSessions": {
@@ -9818,12 +10046,29 @@
             "format": "double"
           },
           "paymentMethod": {
+            "enum": [
+              "cash",
+              "transfer",
+              "credit_card",
+              "line_pay",
+              "other"
+            ],
             "type": "string"
           },
           "paymentType": {
+            "enum": [
+              "single_session",
+              "package_purchase"
+            ],
             "type": "string"
           },
           "status": {
+            "enum": [
+              "paid",
+              "pending",
+              "refunded",
+              "waived"
+            ],
             "type": "string"
           },
           "note": {
@@ -9957,6 +10202,10 @@
             "nullable": true
           },
           "visibility": {
+            "enum": [
+              "hidden",
+              "visible"
+            ],
             "type": "string"
           },
           "visibleFrom": {
@@ -10048,6 +10297,13 @@
             "format": "int32"
           },
           "category": {
+            "enum": [
+              "subjective",
+              "objective",
+              "assessment",
+              "plan",
+              "general"
+            ],
             "type": "string"
           },
           "title": {
@@ -10133,6 +10389,16 @@
         "type": "object",
         "properties": {
           "eventType": {
+            "enum": [
+              "account_created",
+              "appointment_created",
+              "appointment_cancelled",
+              "appointment_reminder",
+              "therapist_leave",
+              "series_renewal",
+              "package_low",
+              "package_expiring"
+            ],
             "type": "string"
           },
           "emailEnabled": {
@@ -10194,6 +10460,13 @@
             "format": "int32"
           },
           "paymentMethod": {
+            "enum": [
+              "cash",
+              "transfer",
+              "credit_card",
+              "line_pay",
+              "other"
+            ],
             "type": "string"
           }
         },
@@ -10571,6 +10844,12 @@
             "type": "string"
           },
           "status": {
+            "enum": [
+              "available",
+              "reserved",
+              "blocked",
+              "cancelled"
+            ],
             "type": "string"
           },
           "note": {
@@ -10786,9 +11065,17 @@
             "nullable": true
           },
           "type": {
+            "enum": [
+              "session",
+              "closure"
+            ],
             "type": "string"
           },
           "format": {
+            "enum": [
+              "soap",
+              "free_text"
+            ],
             "type": "string"
           },
           "soapS": {
@@ -10902,6 +11189,10 @@
         "properties": {
           "visibility": {
             "minLength": 1,
+            "enum": [
+              "hidden",
+              "visible"
+            ],
             "type": "string"
           },
           "visibleFrom": {
@@ -10985,6 +11276,11 @@
             "type": "string"
           },
           "status": {
+            "enum": [
+              "active",
+              "transferred",
+              "closed"
+            ],
             "type": "string"
           },
           "assignedAt": {
@@ -11246,6 +11542,13 @@
         "type": "object",
         "properties": {
           "category": {
+            "enum": [
+              "personality",
+              "trigger",
+              "preference",
+              "family",
+              "other"
+            ],
             "type": "string",
             "nullable": true
           },
@@ -11332,6 +11635,12 @@
           },
           "triggerEvent": {
             "maxLength": 50,
+            "enum": [
+              "manual",
+              "first_visit",
+              "annual_renewal",
+              "service_change"
+            ],
             "type": "string",
             "nullable": true
           },
@@ -11491,6 +11800,13 @@
         "type": "object",
         "properties": {
           "category": {
+            "enum": [
+              "subjective",
+              "objective",
+              "assessment",
+              "plan",
+              "general"
+            ],
             "type": "string",
             "nullable": true
           },
@@ -11521,6 +11837,16 @@
         "properties": {
           "eventType": {
             "minLength": 1,
+            "enum": [
+              "account_created",
+              "appointment_created",
+              "appointment_cancelled",
+              "appointment_reminder",
+              "therapist_leave",
+              "series_renewal",
+              "package_low",
+              "package_expiring"
+            ],
             "type": "string"
           },
           "emailEnabled": {
@@ -11647,6 +11973,12 @@
         "type": "object",
         "properties": {
           "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
             "type": "string",
             "nullable": true
           },
@@ -11800,6 +12132,12 @@
             "type": "string"
           },
           "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
             "type": "string"
           },
           "description": {
@@ -11810,6 +12148,11 @@
             "nullable": true
           },
           "status": {
+            "enum": [
+              "open",
+              "resolved",
+              "dismissed"
+            ],
             "type": "string"
           },
           "resolvedAt": {

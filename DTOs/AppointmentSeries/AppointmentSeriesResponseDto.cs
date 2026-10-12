@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.AppointmentSeries;
 
 public class AppointmentSeriesResponseDto
@@ -9,7 +12,9 @@ public class AppointmentSeriesResponseDto
     public string TherapistName { get; set; } = string.Empty;
     public int DayOfWeek { get; set; }
     public string StartTime { get; set; } = string.Empty;
+    [ConstantValues(typeof(SeriesFrequency))]
     public string Frequency { get; set; } = string.Empty;
+    [ConstantValues(typeof(SeriesStatus))]
     public string Status { get; set; } = string.Empty;
     public string ExpiresAt { get; set; } = string.Empty;
     public int TotalAppointments { get; set; }

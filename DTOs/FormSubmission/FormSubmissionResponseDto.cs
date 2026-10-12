@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.FormSubmission;
 
 public class FormSubmissionResponseDto
@@ -18,6 +21,7 @@ public class FieldValueResponseDto
 {
     public int FieldId { get; set; }
     public string FieldLabel { get; set; } = string.Empty;
+    [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = string.Empty;
     public string? Value { get; set; }
 }

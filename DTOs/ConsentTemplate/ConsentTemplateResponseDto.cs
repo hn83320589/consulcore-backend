@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.ConsentTemplate;
 
 public class ConsentTemplateResponseDto
@@ -6,6 +9,7 @@ public class ConsentTemplateResponseDto
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public int Version { get; set; }
+    [ConstantValues(typeof(ConsentTriggerEvent))]
     public string TriggerEvent { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }

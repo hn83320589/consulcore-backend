@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.SessionNote;
 
 public class SessionNoteResponseDto
@@ -8,7 +11,9 @@ public class SessionNoteResponseDto
     public int TherapistUserId { get; set; }
     public string TherapistName { get; set; } = string.Empty;
     public int? AppointmentId { get; set; }
+    [ConstantValues(typeof(SessionNoteType))]
     public string Type { get; set; } = string.Empty;
+    [ConstantValues(typeof(SessionNoteFormat))]
     public string Format { get; set; } = string.Empty;
     public string? SoapS { get; set; }
     public string? SoapO { get; set; }

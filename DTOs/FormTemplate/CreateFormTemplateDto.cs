@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 
 namespace consulcore_backend.DTOs.FormTemplate;
 
@@ -9,6 +11,7 @@ public class CreateFormTemplateDto
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(50)]
+    [ConstantValues(typeof(FormTemplateType))]
     public string Type { get; set; } = "intake_assessment";
 
     public List<CreateFormSectionDto> Sections { get; set; } = [];
@@ -33,6 +36,7 @@ public class CreateFormFieldDto
     public string Label { get; set; } = string.Empty;
 
     [MaxLength(30)]
+    [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = "text";
 
     public string? Options { get; set; } // JSON

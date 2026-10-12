@@ -1,14 +1,19 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.Billing;
 
 public class PurchasePackageDto
 {
     public int ClientProfileId { get; set; }
     public int PackageId { get; set; }
+    [ConstantValues(typeof(PaymentMethods))]
     public string PaymentMethod { get; set; } = "cash";
 }
 
 public class ConfirmPaymentDto
 {
+    [ConstantValues(typeof(PaymentMethods))]
     public string PaymentMethod { get; set; } = "cash";
 }
 
@@ -28,8 +33,11 @@ public class PaymentRecordResponseDto
     public string? DiscountName { get; set; }
     public decimal OriginalAmount { get; set; }
     public decimal FinalAmount { get; set; }
+    [ConstantValues(typeof(PaymentMethods))]
     public string PaymentMethod { get; set; } = string.Empty;
+    [ConstantValues(typeof(PaymentTypes))]
     public string PaymentType { get; set; } = string.Empty;
+    [ConstantValues(typeof(PaymentStatus))]
     public string Status { get; set; } = string.Empty;
     public string? Note { get; set; }
     public DateTime? PaidAt { get; set; }
@@ -45,6 +53,7 @@ public class ClientPackageResponseDto
     public string PackageName { get; set; } = string.Empty;
     public int SessionsUsed { get; set; }
     public int SessionsRemaining { get; set; }
+    [ConstantValues(typeof(ClientPackageStatus))]
     public string Status { get; set; } = string.Empty;
     public DateTime PurchasedAt { get; set; }
     public DateTime ExpiresAt { get; set; }

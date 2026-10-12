@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 
 namespace consulcore_backend.DTOs.AppointmentSeries;
 
@@ -18,6 +20,7 @@ public class CreateAppointmentSeriesDto
     public string StartTime { get; set; } = string.Empty; // "10:00"
 
     [MaxLength(20)]
+    [ConstantValues(typeof(SeriesFrequency))]
     public string Frequency { get; set; } = "weekly";
 
     [Range(1, 3)]

@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.ClientMemo;
 
 public class ClientMemoResponseDto
@@ -6,6 +9,7 @@ public class ClientMemoResponseDto
     public int ClientProfileId { get; set; }
     public int TherapistUserId { get; set; }
     public string TherapistName { get; set; } = string.Empty;
+    [ConstantValues(typeof(MemoCategory))]
     public string Category { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public bool IsEditable { get; set; } // true = 當前心理師, false = 他人

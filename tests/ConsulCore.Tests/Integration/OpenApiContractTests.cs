@@ -59,6 +59,23 @@ public class OpenApiContractTests(ConsulCoreApiFactory factory) : IClassFixture<
         Assert.Equal("X-Active-Role", schemes.GetProperty("ActiveRole").GetProperty("name").GetString());
     }
 
+    // 狀態值在後端是常數類別（string），沒標註的話前端產生的型別只會是 string
+    [Theory]
+    [InlineData("AppointmentResponseDto", "status", new[] { "scheduled", "completed", "cancelled", "no_show" })]
+    [InlineData("CreateAppointmentDto", "sessionType", new[] { "individual", "couple", "family" })]
+    [InlineData("ScheduleSlotResponseDto", "status", new[] { "available", "reserved", "blocked", "cancelled" })]
+    [InlineData("TherapistInfoDto", "status", new[] { "active", "transferred", "closed" })]
+    [InlineData("UpdateClientMemoDto", "category", new[] { "personality", "trigger", "preference", "family", "other" })]
+    public async Task Status_like_properties_list_their_allowed_values(string schema, string property, string[] expected)
+    {
+        using var spec = JsonDocument.Parse(await GenerateAsync());
+        var values = spec.RootElement.GetProperty("components").GetProperty("schemas")
+            .GetProperty(schema).GetProperty("properties").GetProperty(property).GetProperty("enum")
+            .EnumerateArray().Select(v => v.GetString()).ToArray();
+
+        Assert.Equal(expected, values);
+    }
+
     [Fact]
     public async Task Committed_openapi_json_matches_the_code()
     {

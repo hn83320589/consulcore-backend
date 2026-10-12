@@ -1,3 +1,6 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.ScheduleSlot;
 
 public class ScheduleSlotResponseDto
@@ -10,6 +13,7 @@ public class ScheduleSlotResponseDto
     public string Date { get; set; } = string.Empty;
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
+    [ConstantValues(typeof(SlotStatus))]
     public string Status { get; set; } = string.Empty;
     public string? Note { get; set; }
 }
