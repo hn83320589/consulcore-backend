@@ -136,7 +136,7 @@ public class ClientService
             {
                 OrganizationId = orgId,
                 Username = username,
-                Email = dto.Email ?? $"{username}@placeholder.local",
+                Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(initialPassword),
                 DisplayName = dto.Name,
                 Phone = dto.Phone,

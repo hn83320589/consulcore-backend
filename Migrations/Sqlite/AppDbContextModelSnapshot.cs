@@ -1902,7 +1902,6 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnName("display_name");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT")
                         .HasColumnName("email")
