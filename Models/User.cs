@@ -46,6 +46,13 @@ public class User
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>軟刪除（D6 / BR-15）：不再出現在清單與查詢，但歷史紀錄保留。列出與查詢時需明確排除</summary>
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; }
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
     // Navigation
     [ForeignKey("OrganizationId")]
     public Organization Organization { get; set; } = null!;

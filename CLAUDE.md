@@ -265,6 +265,7 @@ AuditLog（不可刪除, changes 加密）
 - 每個 Entity 都需要 3 層 DTO：CreateDto / UpdateDto / ResponseDto
 - Service 層處理業務邏輯，Controller 只做 DTO 轉換 + 回傳 ApiResponse
 - 所有含 OrganizationId 的 Entity 加 Global Query Filter
+- User、ClientProfile 為**軟刪除**（`IsDeleted` / `DeletedAt`，D6 / BR-15）：不放進 Global Query Filter（它們是預約、紀錄等的必要關聯，filter 會讓 EF 以 INNER JOIN 把歷史資料一起濾掉），清單、查詢、指派、預約等入口要明確排除 `IsDeleted`；帳號唯一性檢查則要涵蓋已刪除者
 - 加密欄位標記 `[Encrypted]`，OnModelCreating 自動套用 converter
 - Enum 用 string 儲存（`.HasConversion<string>()`）
 - Enum 欄位必須有預設值，不允許 null

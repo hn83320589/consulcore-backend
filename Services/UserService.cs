@@ -18,9 +18,12 @@ public class UserService
         _audit = audit;
     }
 
+    /// <summary>未刪除的使用者。帳號唯一性檢查仍需涵蓋已刪除者（帳號不可重複使用）</summary>
+    private IQueryable<User> ExistingUsers => _db.Users.Where(u => !u.IsDeleted);
+
     public async Task<List<UserResponseDto>> GetAllAsync()
     {
-        return await _db.Users
+        return await ExistingUsers
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .Select(u => MapToDto(u))
@@ -29,7 +32,7 @@ public class UserService
 
     public async Task<UserResponseDto> GetByIdAsync(int id)
     {
-        var user = await _db.Users
+        var user = await ExistingUsers
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id)
@@ -108,7 +111,7 @@ public class UserService
         EnsureCanAssignRoles(dto.Roles, actorIsOwner);
         await EnsureCanManageAsync(id, actorIsOwner);
 
-        var user = await _db.Users
+        var user = await ExistingUsers
             .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Id == id)
             ?? throw new KeyNotFoundException("使用者不存在");
@@ -154,27 +157,18 @@ public class UserService
 
     public async Task DeleteAsync(int id)
     {
-        var user = await _db.Users
-            .Include(u => u.UserRoles)
-            .FirstOrDefaultAsync(u => u.Id == id)
+        var user = await ExistingUsers.FirstOrDefaultAsync(u => u.Id == id)
             ?? throw new KeyNotFoundException("使用者不存在");
 
-        // 不能刪除 owner
-        if (user.UserRoles.Any(ur => ur.Role != null && ur.Role.Name == Roles.Owner))
-        {
-            // Need to load role names
-            var roleNames = await _db.UserRoles
-                .Where(ur => ur.UserId == id)
-                .Include(ur => ur.Role)
-                .Select(ur => ur.Role.Name)
-                .ToListAsync();
+        // 不能刪除 owner（原本的檢查依賴未載入的 Role 導覽屬性，永遠不會成立）
+        if (await _db.UserRoles.AnyAsync(ur => ur.UserId == id && ur.Role.Name == Roles.Owner))
+            throw new BusinessRuleException("無法刪除機構擁有者帳號");
 
-            if (roleNames.Contains(Roles.Owner))
-                throw new BusinessRuleException("無法刪除機構擁有者帳號");
-        }
-
-        _db.UserRoles.RemoveRange(user.UserRoles);
-        _db.Users.Remove(user);
+        // 軟刪除（D6）：硬刪除會經由外鍵串聯刪掉其預約、晤談紀錄、收費等歷史資料（BR-15）
+        user.IsDeleted = true;
+        user.DeletedAt = DateTime.UtcNow;
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("delete", "user", id, $"刪除使用者 {user.Username}");
@@ -184,7 +178,7 @@ public class UserService
     {
         await EnsureCanManageAsync(id, actorIsOwner);
 
-        var user = await _db.Users.FindAsync(id)
+        var user = await ExistingUsers.FirstOrDefaultAsync(u => u.Id == id)
             ?? throw new KeyNotFoundException("使用者不存在");
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
@@ -198,7 +192,7 @@ public class UserService
     {
         await EnsureCanManageAsync(id, actorIsOwner);
 
-        var user = await _db.Users.FindAsync(id)
+        var user = await ExistingUsers.FirstOrDefaultAsync(u => u.Id == id)
             ?? throw new KeyNotFoundException("使用者不存在");
 
         user.IsActive = !user.IsActive;

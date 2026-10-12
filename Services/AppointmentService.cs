@@ -31,6 +31,10 @@ public class AppointmentService
         if (slot.Status != SlotStatus.Available)
             throw new BusinessRuleException("此時段已被預約或不可用");
 
+        // 個案須屬於本機構（query filter）且未刪除；原本沒有檢查，外鍵不分機構，連他機構的個案 id 都能預約
+        if (!await _db.ClientProfiles.AnyAsync(c => c.Id == dto.ClientProfileId && !c.IsDeleted))
+            throw new KeyNotFoundException("個案不存在");
+
         // 時段衝突：同個案時段重疊（區間重疊，非僅比對起始時間）
         if (await HasClientTimeConflictAsync(dto.ClientProfileId, slot.Date, slot.StartTime, slot.EndTime))
             throw new BusinessRuleException("此個案在重疊時段已有預約");

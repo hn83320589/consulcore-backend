@@ -36,7 +36,7 @@ public class AuthService
             .Include(u => u.Organization)
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Username == dto.Username);
+            .FirstOrDefaultAsync(u => u.Username == dto.Username && !u.IsDeleted);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
