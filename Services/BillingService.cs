@@ -230,7 +230,7 @@ public class BillingService
     }
 
     // 付款紀錄完整清單（含篩選 + 分頁）
-    public async Task<List<PaymentRecordResponseDto>> GetPaymentsAsync(
+    public async Task<PagedResult<PaymentRecordResponseDto>> GetPaymentsAsync(
         DateTime? startDate, DateTime? endDate, int? clientProfileId,
         int? therapistUserId, string? status, int page = 1, int pageSize = 50)
     {
@@ -238,10 +238,8 @@ public class BillingService
 
         return await query
             .OrderByDescending(r => r.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(r => MapPaymentToDto(r))
-            .ToListAsync();
+            .ThenByDescending(r => r.Id)
+            .ToPagedResultAsync(page, pageSize, r => MapPaymentToDto(r));
     }
 
     // 個案套餐總覽（含篩選）

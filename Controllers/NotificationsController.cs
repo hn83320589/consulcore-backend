@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using consulcore_backend.Authorization;
 using consulcore_backend.DTOs.Notification;
 using consulcore_backend.Models;
@@ -16,11 +17,13 @@ public class NotificationsController : ControllerBase
     public NotificationsController(NotificationService service) { _service = service; }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<NotificationLogResponseDto>>>> GetMyNotifications()
+    public async Task<ActionResult<ApiResponse<PagedResult<NotificationLogResponseDto>>>> GetMyNotifications(
+        [FromQuery, Range(1, int.MaxValue)] int page = 1,
+        [FromQuery, Range(1, Paging.MaxPageSize)] int pageSize = Paging.DefaultPageSize)
     {
         var userId = User.GetUserId();
-        var notifications = await _service.GetByUserAsync(userId);
-        return ApiResponse<List<NotificationLogResponseDto>>.Ok(notifications);
+        var notifications = await _service.GetByUserAsync(userId, page, pageSize);
+        return ApiResponse<PagedResult<NotificationLogResponseDto>>.Ok(notifications);
     }
 
     [HttpGet("unread-count")]

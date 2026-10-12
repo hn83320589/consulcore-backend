@@ -64,7 +64,8 @@ public class OpenApiContractTests(ConsulCoreApiFactory factory) : IClassFixture<
     [InlineData("AppointmentResponseDto", "status", true)]
     [InlineData("AppointmentResponseDto", "note", false)]
     [InlineData("TherapistInfoDto", "therapistName", true)]
-    [InlineData("AuditLogResponseDtoListApiResponse", "message", true)]
+    [InlineData("AuditLogResponseDtoPagedResultApiResponse", "message", true)]
+    [InlineData("AuditLogResponseDtoPagedResult", "totalCount", true)]
     [InlineData("CreateAppointmentDto", "sessionType", false)]
     [InlineData("CreateRoomDto", "name", true)]
     public async Task Required_properties_follow_how_the_schema_is_used(string schema, string property, bool required)

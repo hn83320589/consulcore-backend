@@ -87,6 +87,10 @@ public class ApiTestClient(HttpClient http)
         return await ReadDataAsync(response);
     }
 
+    /// <summary>分頁清單（稽核、收費、通知）：取出 ApiResponse.data.items</summary>
+    public static async Task<JsonElement> ReadItemsAsync(HttpResponseMessage response) =>
+        (await ReadDataAsync(response)).GetProperty("items");
+
     /// <summary>確認回應成功並取出 ApiResponse.data；失敗時把後端訊息帶進錯誤，方便 debug。</summary>
     public static async Task<JsonElement> ReadDataAsync(HttpResponseMessage response)
     {

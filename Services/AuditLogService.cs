@@ -20,7 +20,7 @@ public class AuditLogService
         _audit = audit;
     }
 
-    public async Task<List<AuditLogResponseDto>> GetLogsAsync(
+    public async Task<PagedResult<AuditLogResponseDto>> GetLogsAsync(
         string? action, string? resourceType, int? userId,
         DateTime? startDate, DateTime? endDate, int page = 1, int pageSize = 50,
         int? resourceId = null)
@@ -38,15 +38,14 @@ public class AuditLogService
 
         return await query
             .OrderByDescending(a => a.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(a => new AuditLogResponseDto
+            .ThenByDescending(a => a.Id)
+            .ToPagedResultAsync(page, pageSize, a => new AuditLogResponseDto
             {
                 Id = a.Id, UserId = a.UserId, UserName = a.User != null ? a.User.DisplayName : AuditLog.SystemActorName,
                 Action = a.Action, ResourceType = a.ResourceType, ResourceId = a.ResourceId,
                 Description = a.Description, Changes = a.Changes,
                 IpAddress = a.IpAddress, CreatedAt = a.CreatedAt,
-            }).ToListAsync();
+            });
     }
 
     public async Task<string> ExportCsvAsync(

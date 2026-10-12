@@ -297,6 +297,7 @@
 | 刪除使用者 / 個案改為軟刪除：從清單與查詢消失（GET 單筆回 404），但預約、紀錄、收費等歷史仍顯示其姓名；附帳號的個案刪除後帳號無法登入；已刪除的帳號名稱不可再使用 | **無** |
 | `POST /api/appointments`：個案不存在、已刪除或屬於其他機構時回 **404**（原本不檢查） | **無**（前端只會帶本機構個案） |
 | `GET /api/audit-logs`、`GET /api/billing`：`page` 須 ≥ 1、`pageSize` 須介於 1–100，超出範圍回 **400** | **無**（前端固定 pageSize 50） |
+| `GET /api/audit-logs`、`GET /api/billing`、`GET /api/notifications` 的 `data` 由陣列改為 `{ items, totalCount, page, pageSize }`；`/api/notifications` 新增 `page` / `pageSize`（原本固定回最新 50 筆） | ✅ **前端已先完成**（PR #9：兩種格式都能處理，顯示總頁數） |
 
 ### 5. ✅ 擁有者保護：新的 403 情境
 

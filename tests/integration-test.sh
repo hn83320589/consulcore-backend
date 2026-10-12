@@ -374,7 +374,7 @@ assert "Therapist_a locum read other's client → 200" "$STATUS_CODE" "200"
 
 # 跨心理師檢視須留稽核：owner 查 audit-logs 應見該個案的 view 紀錄（代診軌跡）
 AUDIT_HIT=$(api "/api/audit-logs?resourceType=client_profile&resourceId=$CLIENT2_ID" \
-  -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print('yes' if any(a['action']=='view' for a in (d.get('data') or [])) else 'no')")
+  -H "Authorization: Bearer $TOKEN" -H "X-Active-Role: owner" | jq_ "print('yes' if any(a['action']=='view' for a in ((d.get('data') or {}).get('items') or [])) else 'no')")
 assert "Cross-therapist (locum) view is audited" "$AUDIT_HIT" "yes"
 
 # 安全：therapist 偽造 owner header 也不可取得全機構個案（scope 不提升）

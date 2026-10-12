@@ -68,7 +68,7 @@ public class BillingController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<PaymentRecordResponseDto>>>> GetAll(
+    public async Task<ActionResult<ApiResponse<PagedResult<PaymentRecordResponseDto>>>> GetAll(
         [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId,
         [FromQuery] string? status, [FromQuery, Range(1, int.MaxValue)] int page = 1,
@@ -76,7 +76,7 @@ public class BillingController : ControllerBase
     {
         var records = await _billingService.GetPaymentsAsync(
             startDate, endDate, clientProfileId, therapistUserId, status, page, pageSize);
-        return ApiResponse<List<PaymentRecordResponseDto>>.Ok(records);
+        return ApiResponse<PagedResult<PaymentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet("packages")]

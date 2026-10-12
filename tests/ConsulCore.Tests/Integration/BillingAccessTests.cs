@@ -32,7 +32,7 @@ public class BillingAccessTests(ConsulCoreApiFactory factory) : IClassFixture<Co
         var owner = await _api.RegisterOrganizationAsync($"{prefix} 診所", $"{prefix}_owner");
 
         var response = await _api.SendAsync(HttpMethod.Get, url, owner, "owner");
-        var logs = await ApiTestClient.ReadDataAsync(
+        var logs = await ApiTestClient.ReadItemsAsync(
             await _api.SendAsync(HttpMethod.Get, "/api/audit-logs?action=export", owner, "owner"));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

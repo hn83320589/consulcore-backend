@@ -43,7 +43,7 @@ public class LoginSecurityTests
 
         var failed = await api.SendAsync(HttpMethod.Post, "/api/auth/login", null, null,
             new { username = "ls_ther", password = "wrong-password" });
-        var logs = await ApiTestClient.ReadDataAsync(
+        var logs = await ApiTestClient.ReadItemsAsync(
             await api.SendAsync(HttpMethod.Get, "/api/audit-logs?action=login_failed", owner, "owner"));
 
         Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);

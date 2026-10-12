@@ -17,14 +17,14 @@ public class AuditLogsController : ControllerBase
     public AuditLogsController(AuditLogService service) { _service = service; }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<List<AuditLogResponseDto>>>> GetLogs(
+    public async Task<ActionResult<ApiResponse<PagedResult<AuditLogResponseDto>>>> GetLogs(
         [FromQuery] string? action, [FromQuery] string? resourceType,
         [FromQuery] int? userId, [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate, [FromQuery, Range(1, int.MaxValue)] int page = 1,
         [FromQuery, Range(1, Paging.MaxPageSize)] int pageSize = Paging.DefaultPageSize, [FromQuery] int? resourceId = null)
     {
         var logs = await _service.GetLogsAsync(action, resourceType, userId, startDate, endDate, page, pageSize, resourceId);
-        return ApiResponse<List<AuditLogResponseDto>>.Ok(logs);
+        return ApiResponse<PagedResult<AuditLogResponseDto>>.Ok(logs);
     }
 
     [HttpGet("export")]
