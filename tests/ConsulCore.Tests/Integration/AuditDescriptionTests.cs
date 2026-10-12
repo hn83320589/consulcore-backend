@@ -22,11 +22,14 @@ public class AuditDescriptionTests(ConsulCoreApiFactory factory) : IClassFixture
             new { name = "初談", sessionType = "individual", visitType = "follow_up", amount = 2500 });
         var appointmentId = await clinic.BookAndCompleteAsync();
         await _api.PostOkAsync(clinic.OwnerToken, "owner", $"/api/billing/on-completed/{appointmentId}", new { });
+        await clinic.PurchasePackageAsync(totalSessions: 5);
 
         var descriptions = await DescriptionsAsync(clinic.OwnerToken);
 
         Assert.DoesNotContain(descriptions, d => System.Text.RegularExpressions.Regex.IsMatch(d, @"\b[a-zA-Z]+=\S"));
         Assert.Contains(descriptions, d => d.StartsWith("建立預約") && d.Contains($"個案 #{clinic.ClientProfileId}"));
         Assert.Contains(descriptions, d => d.StartsWith("自動產生收費") && d.Contains(" 元") && !d.Contains(".0"));
+        Assert.Contains(descriptions, d => d.StartsWith("購買套餐") && d.Contains("5 次") && d.Contains("9,000 元"));
+        Assert.DoesNotContain(descriptions, d => System.Text.RegularExpressions.Regex.IsMatch(d, @"\d\.0\b"));
     }
 }
