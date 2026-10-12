@@ -100,6 +100,23 @@ public class AppDbContext : DbContext
             .HasIndex(rp => new { rp.RoleId, rp.PermissionId })
             .IsUnique();
 
+        // BR-04：同一心理師同一時間只能有一個時段。展班會先跳過已存在的時段，
+        // 但兩個展班請求同時進行時彼此看不到，由唯一約束兜底
+        modelBuilder.Entity<ScheduleSlot>()
+            .HasIndex(s => new { s.TherapistUserId, s.Date, s.StartTime })
+            .IsUnique();
+
+        // === 查詢用複合索引（對應常用的篩選 + 排序） ===
+        // 行事曆 / 可預約時段：機構 + 日期區間
+        modelBuilder.Entity<ScheduleSlot>().HasIndex(s => new { s.OrganizationId, s.Date });
+        // 稽核紀錄：機構 + 時間排序；個案詳情的稽核頁籤：資源類型 + 資源 id
+        modelBuilder.Entity<AuditLog>().HasIndex(a => new { a.OrganizationId, a.CreatedAt });
+        modelBuilder.Entity<AuditLog>().HasIndex(a => new { a.ResourceType, a.ResourceId });
+        // 收費清單 / 營收報表：機構 + 建立時間區間
+        modelBuilder.Entity<PaymentRecord>().HasIndex(p => new { p.OrganizationId, p.CreatedAt });
+        // 通知鈴鐺的未讀數（每次換頁都會查）：收件人 + 管道 + 狀態
+        modelBuilder.Entity<NotificationLog>().HasIndex(n => new { n.RecipientId, n.Channel, n.Status });
+
         // === Global Query Filters ===
         // Permission 是全域共用，不加 filter
         modelBuilder.Entity<Organization>().HasQueryFilter(e => e.Id == _currentOrgId);

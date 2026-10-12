@@ -217,9 +217,11 @@ namespace consulcore_backend.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "CreatedAt");
+
+                    b.HasIndex("ResourceType", "ResourceId");
 
                     b.ToTable("audit_logs");
                 });
@@ -1018,6 +1020,8 @@ namespace consulcore_backend.Migrations.Sqlite
 
                     b.HasIndex("TemplateId");
 
+                    b.HasIndex("RecipientId", "Channel", "Status");
+
                     b.ToTable("notification_logs");
                 });
 
@@ -1303,7 +1307,7 @@ namespace consulcore_backend.Migrations.Sqlite
 
                     b.HasIndex("DiscountId");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("OrganizationId", "CreatedAt");
 
                     b.ToTable("payment_records");
                 });
@@ -1639,11 +1643,12 @@ namespace consulcore_backend.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
-
                     b.HasIndex("RoomId");
 
-                    b.HasIndex("TherapistUserId");
+                    b.HasIndex("OrganizationId", "Date");
+
+                    b.HasIndex("TherapistUserId", "Date", "StartTime")
+                        .IsUnique();
 
                     b.ToTable("schedule_slots");
                 });
