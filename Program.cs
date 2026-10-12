@@ -95,6 +95,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<PerformanceService>();
 builder.Services.AddScoped<ViolationService>();
 builder.Services.AddScoped<AuditLogService>();
+builder.Services.AddScoped<OrganizationService>();
 
 // 背景排程：套餐到期、考核可見性
 builder.Services.AddHostedService<ScheduledMaintenanceService>();
