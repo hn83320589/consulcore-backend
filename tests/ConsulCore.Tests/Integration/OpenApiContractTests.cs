@@ -59,6 +59,25 @@ public class OpenApiContractTests(ConsulCoreApiFactory factory) : IClassFixture<
         Assert.Equal("X-Active-Role", schemes.GetProperty("ActiveRole").GetProperty("name").GetString());
     }
 
+    // 回應一定會輸出不可為 null 的欄位 → 必填；請求 DTO 有預設值的欄位前端可以不送，必填與否只看 [Required]
+    [Theory]
+    [InlineData("AppointmentResponseDto", "status", true)]
+    [InlineData("AppointmentResponseDto", "note", false)]
+    [InlineData("TherapistInfoDto", "therapistName", true)]
+    [InlineData("AuditLogResponseDtoListApiResponse", "message", true)]
+    [InlineData("CreateAppointmentDto", "sessionType", false)]
+    [InlineData("CreateRoomDto", "name", true)]
+    public async Task Required_properties_follow_how_the_schema_is_used(string schema, string property, bool required)
+    {
+        using var spec = JsonDocument.Parse(await GenerateAsync());
+        var target = spec.RootElement.GetProperty("components").GetProperty("schemas").GetProperty(schema);
+        var requiredNames = target.TryGetProperty("required", out var list)
+            ? list.EnumerateArray().Select(v => v.GetString()).ToList()
+            : [];
+
+        Assert.Equal(required, requiredNames.Contains(property));
+    }
+
     // 狀態值在後端是常數類別（string），沒標註的話前端產生的型別只會是 string
     [Theory]
     [InlineData("AppointmentResponseDto", "status", new[] { "scheduled", "completed", "cancelled", "no_show" })]

@@ -6924,10 +6924,6 @@
         "additionalProperties": false
       },
       "AssignDiscountDto": {
-        "required": [
-          "clientProfileId",
-          "discountId"
-        ],
         "type": "object",
         "properties": {
           "clientProfileId": {
@@ -6959,9 +6955,6 @@
         "additionalProperties": false
       },
       "AssignTherapistToRoomDto": {
-        "required": [
-          "therapistUserId"
-        ],
         "type": "object",
         "properties": {
           "therapistUserId": {
@@ -7494,9 +7487,6 @@
         "additionalProperties": false
       },
       "ConfirmPaymentDto": {
-        "required": [
-          "paymentMethod"
-        ],
         "type": "object",
         "properties": {
           "paymentMethod": {
@@ -7753,9 +7743,7 @@
       "CreateAppointmentDto": {
         "required": [
           "clientProfileId",
-          "scheduleSlotId",
-          "sessionType",
-          "visitType"
+          "scheduleSlotId"
         ],
         "type": "object",
         "properties": {
@@ -7796,8 +7784,6 @@
         "required": [
           "clientProfileId",
           "dayOfWeek",
-          "frequency",
-          "months",
           "startTime",
           "therapistUserId"
         ],
@@ -7871,7 +7857,6 @@
       },
       "CreateClientProfileDto": {
         "required": [
-          "createAccount",
           "name"
         ],
         "type": "object",
@@ -7946,8 +7931,7 @@
       "CreateConsentTemplateDto": {
         "required": [
           "content",
-          "title",
-          "triggerEvent"
+          "title"
         ],
         "type": "object",
         "properties": {
@@ -7975,7 +7959,6 @@
       },
       "CreateDiscountDto": {
         "required": [
-          "discountType",
           "name"
         ],
         "type": "object",
@@ -8019,9 +8002,7 @@
       "CreateFeeScheduleDto": {
         "required": [
           "amount",
-          "name",
-          "sessionType",
-          "visitType"
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -8061,10 +8042,7 @@
       },
       "CreateFormFieldDto": {
         "required": [
-          "fieldType",
-          "isRequired",
-          "label",
-          "sortOrder"
+          "label"
         ],
         "type": "object",
         "properties": {
@@ -8112,9 +8090,6 @@
       },
       "CreateFormSectionDto": {
         "required": [
-          "fields",
-          "isRequired",
-          "sortOrder",
           "title"
         ],
         "type": "object",
@@ -8142,9 +8117,7 @@
       },
       "CreateFormTemplateDto": {
         "required": [
-          "name",
-          "sections",
-          "type"
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -8173,9 +8146,7 @@
       "CreateNotificationTemplateDto": {
         "required": [
           "bodyTemplate",
-          "channel",
           "eventType",
-          "isRequired",
           "subject"
         ],
         "type": "object",
@@ -8222,10 +8193,8 @@
       "CreatePackageDto": {
         "required": [
           "name",
-          "sessionType",
           "totalAmount",
-          "totalSessions",
-          "validDays"
+          "totalSessions"
         ],
         "type": "object",
         "properties": {
@@ -8260,11 +8229,7 @@
       },
       "CreatePerformanceReviewDto": {
         "required": [
-          "clientFeedbackScore",
-          "overallScore",
           "period",
-          "professionalScore",
-          "teamworkScore",
           "therapistUserId"
         ],
         "type": "object",
@@ -8313,7 +8278,6 @@
         "required": [
           "category",
           "content",
-          "sortOrder",
           "title"
         ],
         "type": "object",
@@ -8364,7 +8328,6 @@
         "required": [
           "dayOfWeek",
           "endTime",
-          "slotDuration",
           "startTime",
           "therapistUserId"
         ],
@@ -8399,9 +8362,7 @@
       },
       "CreateSessionNoteDto": {
         "required": [
-          "clientProfileId",
-          "format",
-          "type"
+          "clientProfileId"
         ],
         "type": "object",
         "properties": {
@@ -8503,7 +8464,6 @@
         "required": [
           "description",
           "incidentDate",
-          "severity",
           "therapistUserId"
         ],
         "type": "object",
@@ -8780,10 +8740,6 @@
         "additionalProperties": false
       },
       "ExpandScheduleDto": {
-        "required": [
-          "endDate",
-          "startDate"
-        ],
         "type": "object",
         "properties": {
           "startDate": {
@@ -9423,10 +9379,6 @@
         "additionalProperties": false
       },
       "ManualExpandDto": {
-        "required": [
-          "month",
-          "year"
-        ],
         "type": "object",
         "properties": {
           "year": {
@@ -10444,11 +10396,6 @@
         "additionalProperties": false
       },
       "PurchasePackageDto": {
-        "required": [
-          "clientProfileId",
-          "packageId",
-          "paymentMethod"
-        ],
         "type": "object",
         "properties": {
           "clientProfileId": {
@@ -10527,9 +10474,6 @@
         "additionalProperties": false
       },
       "RenewSeriesDto": {
-        "required": [
-          "months"
-        ],
         "type": "object",
         "properties": {
           "months": {
@@ -10542,9 +10486,6 @@
         "additionalProperties": false
       },
       "RescheduleDto": {
-        "required": [
-          "newScheduleSlotId"
-        ],
         "type": "object",
         "properties": {
           "newScheduleSlotId": {
@@ -11211,8 +11152,7 @@
       "SignConsentDto": {
         "required": [
           "clientProfileId",
-          "consentTemplateId",
-          "signedRemotely"
+          "consentTemplateId"
         ],
         "type": "object",
         "properties": {
@@ -11828,10 +11768,7 @@
       },
       "UpdatePreferenceDto": {
         "required": [
-          "emailEnabled",
-          "eventType",
-          "inAppEnabled",
-          "smsEnabled"
+          "eventType"
         ],
         "type": "object",
         "properties": {

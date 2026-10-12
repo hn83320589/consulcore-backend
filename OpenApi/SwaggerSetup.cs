@@ -13,7 +13,7 @@ public static class SwaggerSetup
 
     public static void Configure(SwaggerGenOptions options)
     {
-        // 讓 string 與 string? 在 schema 上可區分（nullable），再把不可為 null 的屬性標成 required，
+        // 讓 string 與 string? 在 schema 上可區分（nullable），再把回應型別中不可為 null 的屬性標成 required，
         // 前端產生的型別才不會每個欄位都是 optional
         options.SupportNonNullableReferenceTypes();
         options.SchemaFilter<NonNullablePropertiesRequiredFilter>();
