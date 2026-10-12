@@ -16,31 +16,31 @@ public class NotificationTemplatesController : ControllerBase
     public NotificationTemplatesController(NotificationService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<NotificationTemplateResponseDto>>>> GetAll()
     {
         var templates = await _service.GetAllTemplatesAsync();
-        return Ok(ApiResponse<List<NotificationTemplateResponseDto>>.Ok(templates));
+        return ApiResponse<List<NotificationTemplateResponseDto>>.Ok(templates);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateNotificationTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<NotificationTemplateResponseDto>>> Create([FromBody] CreateNotificationTemplateDto dto)
     {
         var orgId = User.GetOrganizationId();
         var t = await _service.CreateTemplateAsync(dto, orgId);
-        return Ok(ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已建立"));
+        return ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已建立");
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateNotificationTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<NotificationTemplateResponseDto>>> Update(int id, [FromBody] UpdateNotificationTemplateDto dto)
     {
         var t = await _service.UpdateTemplateAsync(id, dto);
-        return Ok(ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已更新"));
+        return ApiResponse<NotificationTemplateResponseDto>.Ok(t, "通知範本已更新");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _service.DeleteTemplateAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "通知範本已刪除"));
+        return ApiResponse<object>.Ok(new { }, "通知範本已刪除");
     }
 }

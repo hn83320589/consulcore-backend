@@ -29,47 +29,47 @@ public class AppointmentSeriesController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateAppointments)]
-    public async Task<IActionResult> Create([FromBody] CreateAppointmentSeriesDto dto)
+    public async Task<ActionResult<ApiResponse<AppointmentSeriesResponseDto>>> Create([FromBody] CreateAppointmentSeriesDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var series = await _seriesService.CreateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已建立"));
+        return ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已建立");
     }
 
     [HttpPost("{id}/renew")]
     [Authorize(Policy = Policies.CanCreateAppointments)]
-    public async Task<IActionResult> Renew(int id, [FromBody] RenewSeriesDto dto)
+    public async Task<ActionResult<ApiResponse<AppointmentSeriesResponseDto>>> Renew(int id, [FromBody] RenewSeriesDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var series = await _seriesService.RenewAsync(id, dto, orgId, userId);
-        return Ok(ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已續約"));
+        return ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已續約");
     }
 
     [HttpPost("{id}/end")]
     [Authorize(Policy = Policies.CanUpdateAppointments)]
-    public async Task<IActionResult> End(int id)
+    public async Task<ActionResult<ApiResponse<AppointmentSeriesResponseDto>>> End(int id)
     {
         var series = await _seriesService.EndAsync(id);
-        return Ok(ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已結束"));
+        return ApiResponse<AppointmentSeriesResponseDto>.Ok(series, "常態性預約已結束");
     }
 
     [HttpGet("pending-renewal")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> PendingRenewal()
+    public async Task<ActionResult<ApiResponse<List<AppointmentSeriesResponseDto>>>> PendingRenewal()
     {
         // 待續約清單為 staff 聚合視圖，非 staff 身份無權存取
         if (!ActingAsVerifiedNonClient())
             throw new ForbiddenException("無權存取此清單");
 
         var series = await _seriesService.GetPendingRenewalAsync();
-        return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
+        return ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series);
     }
 
     [HttpGet("by-client/{clientProfileId}")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> GetByClient(int clientProfileId, [FromQuery] string? status)
+    public async Task<ActionResult<ApiResponse<List<AppointmentSeriesResponseDto>>>> GetByClient(int clientProfileId, [FromQuery] string? status)
     {
         // 非 staff 身份只能查自己的常態預約，防以任意 id 讀取他人（IDOR）
         if (!ActingAsVerifiedNonClient())
@@ -80,6 +80,6 @@ public class AppointmentSeriesController : ControllerBase
         }
 
         var series = await _seriesService.GetByClientAsync(clientProfileId, status);
-        return Ok(ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series));
+        return ApiResponse<List<AppointmentSeriesResponseDto>>.Ok(series);
     }
 }

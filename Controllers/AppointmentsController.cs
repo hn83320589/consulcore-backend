@@ -33,49 +33,49 @@ public class AppointmentsController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateAppointments)]
-    public async Task<IActionResult> Create([FromBody] CreateAppointmentDto dto)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> Create([FromBody] CreateAppointmentDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var appointment = await _appointmentService.CreateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已建立"));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已建立");
     }
 
     [HttpPost("{id}/complete")]
     [Authorize(Policy = Policies.CanUpdateAppointments)]
-    public async Task<IActionResult> Complete(int id)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> Complete(int id)
     {
         var appointment = await _appointmentService.CompleteAsync(id);
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已完成"));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已完成");
     }
 
     [HttpPost("{id}/cancel")]
     [Authorize(Policy = Policies.CanUpdateAppointments)]
-    public async Task<IActionResult> Cancel(int id, [FromBody] AppointmentNoteDto? dto)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> Cancel(int id, [FromBody] AppointmentNoteDto? dto)
     {
         var appointment = await _appointmentService.CancelAsync(id, dto);
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已取消"));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已取消");
     }
 
     [HttpPost("{id}/no-show")]
     [Authorize(Policy = Policies.CanUpdateAppointments)]
-    public async Task<IActionResult> MarkNoShow(int id)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> MarkNoShow(int id)
     {
         var appointment = await _appointmentService.MarkNoShowAsync(id);
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "已標記未到"));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment, "已標記未到");
     }
 
     [HttpPost("{id}/reschedule")]
     [Authorize(Policy = Policies.CanUpdateAppointments)]
-    public async Task<IActionResult> Reschedule(int id, [FromBody] RescheduleDto dto)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> Reschedule(int id, [FromBody] RescheduleDto dto)
     {
         var appointment = await _appointmentService.RescheduleAsync(id, dto);
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已改期"));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment, "預約已改期");
     }
 
     [HttpGet("calendar")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> CalendarView(
+    public async Task<ActionResult<ApiResponse<List<AppointmentResponseDto>>>> CalendarView(
         [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate, [FromQuery] int? therapistUserId)
     {
         // 行事曆為 staff 聚合視圖，無法依個案範圍化；非 staff 身份一律拒絕（個案請改用 list）
@@ -83,38 +83,38 @@ public class AppointmentsController : ControllerBase
             throw new ForbiddenException("個案無法存取行事曆檢視");
 
         var appointments = await _appointmentService.GetByDateRangeAsync(startDate, endDate, therapistUserId);
-        return Ok(ApiResponse<List<AppointmentResponseDto>>.Ok(appointments));
+        return ApiResponse<List<AppointmentResponseDto>>.Ok(appointments);
     }
 
     [HttpGet("list")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> ListView(
+    public async Task<ActionResult<ApiResponse<List<AppointmentResponseDto>>>> ListView(
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId, [FromQuery] string? status)
     {
         // 非 staff 身份一律限縮為自己的個案，忽略傳入的 clientProfileId（防越權查他人）
         if (!ActingAsVerifiedNonClient())
         {
             var own = await CurrentClientProfileIdAsync();
-            if (own == null) return Ok(ApiResponse<List<AppointmentResponseDto>>.Ok([]));
+            if (own == null) return ApiResponse<List<AppointmentResponseDto>>.Ok([]);
             clientProfileId = own;
             therapistUserId = null;
         }
         var appointments = await _appointmentService.GetListAsync(clientProfileId, therapistUserId, status);
-        return Ok(ApiResponse<List<AppointmentResponseDto>>.Ok(appointments));
+        return ApiResponse<List<AppointmentResponseDto>>.Ok(appointments);
     }
 
     [HttpGet("available-slots")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> AvailableSlots(
+    public async Task<ActionResult<ApiResponse<List<ScheduleSlotResponseDto>>>> AvailableSlots(
         [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate, [FromQuery] int? therapistUserId)
     {
         var slots = await _appointmentService.GetAvailableSlotsAsync(therapistUserId, startDate, endDate);
-        return Ok(ApiResponse<List<ScheduleSlotResponseDto>>.Ok(slots));
+        return ApiResponse<List<ScheduleSlotResponseDto>>.Ok(slots);
     }
 
     [HttpGet("{id:int}")]
     [Authorize(Policy = Policies.CanViewAppointments)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<AppointmentResponseDto>>> GetById(int id)
     {
         var appointment = await _appointmentService.GetByIdAsync(id);
 
@@ -126,6 +126,6 @@ public class AppointmentsController : ControllerBase
                 throw new ForbiddenException("無權存取此預約");
         }
 
-        return Ok(ApiResponse<AppointmentResponseDto>.Ok(appointment));
+        return ApiResponse<AppointmentResponseDto>.Ok(appointment);
     }
 }

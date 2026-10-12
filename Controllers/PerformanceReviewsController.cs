@@ -18,83 +18,83 @@ public class PerformanceReviewsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<PerformanceReviewResponseDto>>>> GetAll()
     {
         var reviews = await _service.GetAllReviewsAsync();
-        return Ok(ApiResponse<List<PerformanceReviewResponseDto>>.Ok(reviews));
+        return ApiResponse<List<PerformanceReviewResponseDto>>.Ok(reviews);
     }
 
     [HttpGet("by-therapist/{therapistUserId}")]
     [Authorize(Policy = Policies.CanViewPerformance)]
-    public async Task<IActionResult> GetByTherapist(int therapistUserId)
+    public async Task<ActionResult<ApiResponse<List<PerformanceReviewResponseDto>>>> GetByTherapist(int therapistUserId)
     {
         var reviews = await _service.GetByTherapistAsync(therapistUserId);
-        return Ok(ApiResponse<List<PerformanceReviewResponseDto>>.Ok(reviews));
+        return ApiResponse<List<PerformanceReviewResponseDto>>.Ok(reviews);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> Create([FromBody] CreatePerformanceReviewDto dto)
+    public async Task<ActionResult<ApiResponse<PerformanceReviewResponseDto>>> Create([FromBody] CreatePerformanceReviewDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var review = await _service.CreateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<PerformanceReviewResponseDto>.Ok(review, "考核已建立"));
+        return ApiResponse<PerformanceReviewResponseDto>.Ok(review, "考核已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdatePerformanceReviewDto dto)
+    public async Task<ActionResult<ApiResponse<PerformanceReviewResponseDto>>> Update(int id, [FromBody] UpdatePerformanceReviewDto dto)
     {
         var review = await _service.UpdateAsync(id, dto);
-        return Ok(ApiResponse<PerformanceReviewResponseDto>.Ok(review, "考核已更新"));
+        return ApiResponse<PerformanceReviewResponseDto>.Ok(review, "考核已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _service.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "考核已刪除"));
+        return ApiResponse<object>.Ok(new { }, "考核已刪除");
     }
 
     [HttpPut("{id}/visibility")]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> SetVisibility(int id, [FromBody] SetVisibilityDto dto)
+    public async Task<ActionResult<ApiResponse<PerformanceReviewResponseDto>>> SetVisibility(int id, [FromBody] SetVisibilityDto dto)
     {
         var userId = User.GetUserId();
         var review = await _service.SetVisibilityAsync(id, dto, userId);
-        return Ok(ApiResponse<PerformanceReviewResponseDto>.Ok(review, "可見性已設定"));
+        return ApiResponse<PerformanceReviewResponseDto>.Ok(review, "可見性已設定");
     }
 
     [HttpGet("metrics/{therapistUserId}")]
     [Authorize(Policy = Policies.CanViewPerformance)]
-    public async Task<IActionResult> GetMetrics(int therapistUserId,
+    public async Task<ActionResult<ApiResponse<TherapistMetricsDto>>> GetMetrics(int therapistUserId,
         [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate)
     {
         var metrics = await _service.GetMetricsAsync(
             therapistUserId, startDate, endDate);
-        return Ok(ApiResponse<TherapistMetricsDto>.Ok(metrics));
+        return ApiResponse<TherapistMetricsDto>.Ok(metrics);
     }
 
     [HttpGet("metrics/{therapistUserId}/trend")]
     [Authorize(Policy = Policies.CanViewPerformance)]
-    public async Task<IActionResult> GetMetricsTrend(int therapistUserId,
+    public async Task<ActionResult<ApiResponse<MetricsTrendDto>>> GetMetricsTrend(int therapistUserId,
         [FromQuery] string metric, [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate,
         [FromQuery] string interval = "month")
     {
         var trend = await _service.GetMetricsTrendAsync(
             therapistUserId, metric, startDate, endDate);
-        return Ok(ApiResponse<MetricsTrendDto>.Ok(trend));
+        return ApiResponse<MetricsTrendDto>.Ok(trend);
     }
 
     [HttpGet("metrics-comparison")]
     [Authorize(Policy = Policies.CanManagePerformance)]
-    public async Task<IActionResult> GetComparison(
+    public async Task<ActionResult<ApiResponse<List<TherapistMetricsDto>>>> GetComparison(
         [FromQuery, BindRequired] DateOnly startDate, [FromQuery, BindRequired] DateOnly endDate)
     {
         var metrics = await _service.GetMetricsComparisonAsync(
             startDate, endDate);
-        return Ok(ApiResponse<List<TherapistMetricsDto>>.Ok(metrics));
+        return ApiResponse<List<TherapistMetricsDto>>.Ok(metrics);
     }
 }

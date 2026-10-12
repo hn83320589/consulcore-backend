@@ -1,3 +1,4 @@
+using consulcore_backend.DTOs.Health;
 using consulcore_backend.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,8 +9,8 @@ namespace consulcore_backend.Controllers;
 public class HealthController : ControllerBase
 {
     [HttpGet]
-    public IActionResult Get()
+    public ActionResult<ApiResponse<HealthStatusDto>> Get()
     {
-        return Ok(ApiResponse<object>.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+        return ApiResponse<HealthStatusDto>.Ok(new HealthStatusDto { Status = "healthy", Timestamp = DateTime.UtcNow });
     }
 }

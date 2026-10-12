@@ -16,34 +16,34 @@ public class PackagesController : ControllerBase
     public PackagesController(PackageService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<PackageResponseDto>>>> GetAll()
     {
         var packages = await _service.GetAllAsync();
-        return Ok(ApiResponse<List<PackageResponseDto>>.Ok(packages));
+        return ApiResponse<List<PackageResponseDto>>.Ok(packages);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateBilling)]
-    public async Task<IActionResult> Create([FromBody] CreatePackageDto dto)
+    public async Task<ActionResult<ApiResponse<PackageResponseDto>>> Create([FromBody] CreatePackageDto dto)
     {
         var orgId = User.GetOrganizationId();
         var pkg = await _service.CreateAsync(dto, orgId);
-        return Ok(ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已建立"));
+        return ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdatePackageDto dto)
+    public async Task<ActionResult<ApiResponse<PackageResponseDto>>> Update(int id, [FromBody] UpdatePackageDto dto)
     {
         var pkg = await _service.UpdateAsync(id, dto);
-        return Ok(ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已更新"));
+        return ApiResponse<PackageResponseDto>.Ok(pkg, "套餐已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _service.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "套餐已刪除"));
+        return ApiResponse<object>.Ok(new { }, "套餐已刪除");
     }
 }

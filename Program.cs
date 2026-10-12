@@ -5,6 +5,7 @@ using consulcore_backend.Data;
 using consulcore_backend.Data.Encryption;
 using consulcore_backend.Middleware;
 using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 using consulcore_backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -41,7 +42,7 @@ builder.Services.AddControllers()
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(SwaggerSetup.Configure);
 
 // HttpContextAccessor
 builder.Services.AddHttpContextAccessor();

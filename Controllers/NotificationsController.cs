@@ -16,34 +16,34 @@ public class NotificationsController : ControllerBase
     public NotificationsController(NotificationService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> GetMyNotifications()
+    public async Task<ActionResult<ApiResponse<List<NotificationLogResponseDto>>>> GetMyNotifications()
     {
         var userId = User.GetUserId();
         var notifications = await _service.GetByUserAsync(userId);
-        return Ok(ApiResponse<List<NotificationLogResponseDto>>.Ok(notifications));
+        return ApiResponse<List<NotificationLogResponseDto>>.Ok(notifications);
     }
 
     [HttpGet("unread-count")]
-    public async Task<IActionResult> UnreadCount()
+    public async Task<ActionResult<ApiResponse<UnreadCountDto>>> UnreadCount()
     {
         var userId = User.GetUserId();
         var count = await _service.GetUnreadCountAsync(userId);
-        return Ok(ApiResponse<object>.Ok(new { unreadCount = count }));
+        return ApiResponse<UnreadCountDto>.Ok(new UnreadCountDto { UnreadCount = count });
     }
 
     [HttpPost("{id}/mark-read")]
-    public async Task<IActionResult> MarkRead(int id)
+    public async Task<ActionResult<ApiResponse<object>>> MarkRead(int id)
     {
         var userId = User.GetUserId();
         await _service.MarkAsReadAsync(id, userId);
-        return Ok(ApiResponse<object>.Ok(new { }, "已標記已讀"));
+        return ApiResponse<object>.Ok(new { }, "已標記已讀");
     }
 
     [HttpPost("mark-all-read")]
-    public async Task<IActionResult> MarkAllRead()
+    public async Task<ActionResult<ApiResponse<object>>> MarkAllRead()
     {
         var userId = User.GetUserId();
         await _service.MarkAllAsReadAsync(userId);
-        return Ok(ApiResponse<object>.Ok(new { }, "已全部標記已讀"));
+        return ApiResponse<object>.Ok(new { }, "已全部標記已讀");
     }
 }

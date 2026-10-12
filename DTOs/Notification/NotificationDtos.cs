@@ -56,3 +56,8 @@ public class PreferenceResponseDto
     public bool SmsEnabled { get; set; }
     public bool InAppEnabled { get; set; }
 }
+
+public class UnreadCountDto
+{
+    public int UnreadCount { get; set; }
+}

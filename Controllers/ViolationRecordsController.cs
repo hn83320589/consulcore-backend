@@ -16,46 +16,46 @@ public class ViolationRecordsController : ControllerBase
     public ViolationRecordsController(ViolationService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<ViolationRecordResponseDto>>>> GetAll()
     {
         var records = await _service.GetAllAsync();
-        return Ok(ApiResponse<List<ViolationRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<ViolationRecordResponseDto>>.Ok(records);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateViolationRecordDto dto)
+    public async Task<ActionResult<ApiResponse<ViolationRecordResponseDto>>> Create([FromBody] CreateViolationRecordDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var record = await _service.CreateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已建立"));
+        return ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已建立");
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateViolationRecordDto dto)
+    public async Task<ActionResult<ApiResponse<ViolationRecordResponseDto>>> Update(int id, [FromBody] UpdateViolationRecordDto dto)
     {
         var record = await _service.UpdateAsync(id, dto);
-        return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已更新"));
+        return ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規紀錄已更新");
     }
 
     [HttpPost("{id}/resolve")]
-    public async Task<IActionResult> Resolve(int id, [FromBody] ResolveViolationDto dto)
+    public async Task<ActionResult<ApiResponse<ViolationRecordResponseDto>>> Resolve(int id, [FromBody] ResolveViolationDto dto)
     {
         var record = await _service.ResolveAsync(id, dto);
-        return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規已解決"));
+        return ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規已解決");
     }
 
     [HttpPost("{id}/dismiss")]
-    public async Task<IActionResult> Dismiss(int id)
+    public async Task<ActionResult<ApiResponse<ViolationRecordResponseDto>>> Dismiss(int id)
     {
         var record = await _service.DismissAsync(id);
-        return Ok(ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規已駁回"));
+        return ApiResponse<ViolationRecordResponseDto>.Ok(record, "違規已駁回");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _service.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "違規紀錄已刪除"));
+        return ApiResponse<object>.Ok(new { }, "違規紀錄已刪除");
     }
 }

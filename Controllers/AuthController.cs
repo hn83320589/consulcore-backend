@@ -21,37 +21,37 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [EnableRateLimiting(RateLimitPolicies.Login)]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Login([FromBody] LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
-        return Ok(ApiResponse<LoginResponseDto>.Ok(result, "登入成功"));
+        return ApiResponse<LoginResponseDto>.Ok(result, "登入成功");
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    public async Task<ActionResult<ApiResponse<LoginResponseDto>>> Register([FromBody] RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
-        return Ok(ApiResponse<LoginResponseDto>.Ok(result, "註冊成功"));
+        return ApiResponse<LoginResponseDto>.Ok(result, "註冊成功");
     }
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<IActionResult> Me()
+    public async Task<ActionResult<ApiResponse<CurrentUserDto>>> Me()
     {
         var userId = User.GetUserId();
         var orgId = User.GetOrganizationId();
         var activeRole = Request.Headers["X-Active-Role"].FirstOrDefault();
 
         var result = await _authService.GetCurrentUserAsync(userId, orgId, activeRole);
-        return Ok(ApiResponse<CurrentUserDto>.Ok(result));
+        return ApiResponse<CurrentUserDto>.Ok(result);
     }
 
     [Authorize]
     [HttpPut("change-password")]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    public async Task<ActionResult<ApiResponse<object>>> ChangePassword([FromBody] ChangePasswordDto dto)
     {
         var userId = User.GetUserId();
         await _authService.ChangePasswordAsync(userId, dto);
-        return Ok(ApiResponse<object>.Ok(new { }, "密碼已變更"));
+        return ApiResponse<object>.Ok(new { }, "密碼已變更");
     }
 }

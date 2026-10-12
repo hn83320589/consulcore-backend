@@ -273,6 +273,8 @@ AuditLog（不可刪除, changes 加密）
 - 稽核觸發點在 Service 層呼叫 `IAuditService.LogAsync()`
 - 新功能與 bug 修正先寫測試；API 行為用 `Integration/` 的 `ConsulCoreApiFactory` + `ApiTestClient` 測
 - 錯誤以例外表達，由 `ErrorHandlingMiddleware` 對應狀態碼：`BusinessRuleException` → 400、`ForbiddenException` → 403、`KeyNotFoundException` → 404、`DbUpdateConcurrencyException` → 409，訊息會回給前端。**不要**用 `InvalidOperationException`（框架也會丟，訊息不外洩、回 500）或 `UnauthorizedAccessException`（401 = 登入失效，前端會登出；只用於登入失敗）
+- Action 回傳 `ActionResult<ApiResponse<T>>`，直接 `return ApiResponse<T>.Ok(...)`（不要包 `Ok(...)`，型別才會被編譯器檢查）；匿名物件不會產生有用的 schema，回傳資料一律用 DTO。檔案下載用 `[ProducesResponseType<FileResult>(200, "text/csv")]` 標註
+- `openapi.json`（repo 根目錄）是前端產生 TS 型別的來源，由 `OpenApiContractTests` 檢查與程式碼一致；改到 DTO 或路由時執行 `UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests` 重新產生並一起 commit
 - 資料存取保持 provider 中立（不寫 raw SQL、不指定資料庫型別名稱、decimal 用 `[Precision]`），規則見 `docs/database.md`
 
 ## 設定
@@ -297,6 +299,7 @@ dotnet ef migrations add <name> -o Migrations/Sqlite  # 新增 migration
 dotnet ef database update        # 更新資料庫
 dotnet build                     # 建置（警告視為錯誤）
 dotnet test                      # 單元 + API 整合測試（tests/ConsulCore.Tests）
+UPDATE_OPENAPI=1 dotnet test --filter OpenApiContractTests  # API 契約異動後重新產生 openapi.json
 bash tests/integration-test.sh   # 整合測試（需先 dotnet run；直接查 App_Data/consulcore.db 驗證加密）
 ```
 
