@@ -61,6 +61,11 @@ def main():
     def o(method, path, body=None):
         return call(method, path, owner, "owner", body)
 
+    o("PUT", "/organization", {
+        "name": "晴光心理諮商所", "phone": "02-2345-6789", "email": "hello@demo.local",
+        "address": "台北市信義區松仁路 100 號 8 樓",
+    })
+
     # ── 人員與診間 ──────────────────────────────
     therapists = {}
     for username, name in [("demo_chen", "陳怡君"), ("demo_lin", "林志豪")]:
