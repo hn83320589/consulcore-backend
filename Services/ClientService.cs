@@ -26,7 +26,7 @@ public class ClientService
 
     public async Task<List<ClientProfileResponseDto>> GetAllAsync()
     {
-        var clients = await ExistingClients
+        var clients = await ExistingClients.AsNoTracking()
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .ToListAsync();
@@ -36,7 +36,7 @@ public class ClientService
 
     public async Task<ClientProfileResponseDto> GetByIdAsync(int id)
     {
-        var client = await ExistingClients
+        var client = await ExistingClients.AsNoTracking()
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .FirstOrDefaultAsync(c => c.Id == id)
@@ -71,7 +71,7 @@ public class ClientService
             .Select(tc => tc.ClientProfileId)
             .ToListAsync();
 
-        var clients = await _db.ClientProfiles
+        var clients = await ExistingClients.AsNoTracking()
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .Where(c => clientIds.Contains(c.Id))
@@ -354,7 +354,7 @@ public class ClientService
         string? keyword, string? idNumberLast4, int? scopeTherapistUserId = null)
     {
         // 加密欄位無法在 DB 層搜尋，需在應用層比對
-        var query = ExistingClients
+        var query = ExistingClients.AsNoTracking()
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .AsQueryable();

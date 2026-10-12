@@ -14,7 +14,7 @@ public class DiscountService
 
     public async Task<List<DiscountResponseDto>> GetAllAsync()
     {
-        var discounts = await _db.Discounts.OrderBy(d => d.Name).ToListAsync();
+        var discounts = await _db.Discounts.AsNoTracking().OrderBy(d => d.Name).ToListAsync();
         return discounts.Select(MapToDto).ToList();
     }
 

@@ -19,7 +19,7 @@ public class RoomService
 
     public async Task<List<RoomResponseDto>> GetAllAsync()
     {
-        var rooms = await _db.Rooms
+        var rooms = await _db.Rooms.AsNoTracking()
             .Include(r => r.TherapistRooms)
                 .ThenInclude(tr => tr.TherapistUser)
             .OrderBy(r => r.Name)
@@ -30,7 +30,7 @@ public class RoomService
 
     public async Task<RoomResponseDto> GetByIdAsync(int id)
     {
-        var room = await _db.Rooms
+        var room = await _db.Rooms.AsNoTracking()
             .Include(r => r.TherapistRooms)
                 .ThenInclude(tr => tr.TherapistUser)
             .FirstOrDefaultAsync(r => r.Id == id)

@@ -22,7 +22,7 @@ public class FormService
 
     public async Task<List<FormTemplateResponseDto>> GetAllTemplatesAsync()
     {
-        var templates = await _db.FormTemplates
+        var templates = await _db.FormTemplates.AsNoTracking()
             .Include(t => t.Sections.OrderBy(s => s.SortOrder))
                 .ThenInclude(s => s.Fields.OrderBy(f => f.SortOrder))
             .OrderByDescending(t => t.CreatedAt)
@@ -33,7 +33,7 @@ public class FormService
 
     public async Task<FormTemplateResponseDto> GetTemplateByIdAsync(int id)
     {
-        var template = await _db.FormTemplates
+        var template = await _db.FormTemplates.AsNoTracking()
             .Include(t => t.Sections.OrderBy(s => s.SortOrder))
                 .ThenInclude(s => s.Fields.OrderBy(f => f.SortOrder))
             .FirstOrDefaultAsync(t => t.Id == id)
@@ -212,7 +212,7 @@ public class FormService
 
     public async Task<FormSubmissionResponseDto> GetSubmissionByIdAsync(int id)
     {
-        var submission = await _db.FormSubmissions
+        var submission = await _db.FormSubmissions.AsNoTracking()
             .Include(s => s.Template)
             .Include(s => s.ClientProfile)
             .Include(s => s.TherapistUser)
@@ -248,7 +248,7 @@ public class FormService
 
     public async Task<List<FormSubmissionResponseDto>> GetSubmissionsByClientAsync(int clientProfileId)
     {
-        var submissions = await _db.FormSubmissions
+        var submissions = await _db.FormSubmissions.AsNoTracking()
             .Include(s => s.Template)
             .Include(s => s.ClientProfile)
             .Include(s => s.TherapistUser)

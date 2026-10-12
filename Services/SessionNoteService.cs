@@ -146,7 +146,7 @@ public class SessionNoteService
 
     public async Task<List<SessionNoteResponseDto>> GetByClientAsync(int clientProfileId)
     {
-        var notes = await _db.SessionNotes
+        var notes = await _db.SessionNotes.AsNoTracking()
             .Include(n => n.ClientProfile)
             .Include(n => n.TherapistUser)
             .Where(n => n.ClientProfileId == clientProfileId)
@@ -162,7 +162,7 @@ public class SessionNoteService
 
     public async Task<SessionNoteResponseDto?> GetByAppointmentAsync(int appointmentId)
     {
-        var note = await _db.SessionNotes
+        var note = await _db.SessionNotes.AsNoTracking()
             .Include(n => n.ClientProfile)
             .Include(n => n.TherapistUser)
             .FirstOrDefaultAsync(n => n.AppointmentId == appointmentId);

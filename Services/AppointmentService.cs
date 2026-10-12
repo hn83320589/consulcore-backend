@@ -272,7 +272,7 @@ public class AppointmentService
 
     public async Task<AppointmentResponseDto> GetByIdAsync(int id)
     {
-        var appointment = await _db.Appointments
+        var appointment = await _db.Appointments.AsNoTracking()
             .Include(a => a.ClientProfile)
             .Include(a => a.TherapistUser)
             .Include(a => a.Room)

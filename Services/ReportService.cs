@@ -16,19 +16,23 @@ public class ReportService
         var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1);
 
-        var records = await _db.PaymentRecords
+        // 在資料庫端依狀態加總，不把整個月的收費紀錄載入記憶體
+        var byStatus = await _db.PaymentRecords
             .Where(r => r.CreatedAt >= startDate && r.CreatedAt < endDate)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count(), Amount = g.Sum(r => r.FinalAmount) })
             .ToListAsync();
+        decimal AmountOf(string status) => byStatus.Where(s => s.Status == status).Sum(s => s.Amount);
 
         return new MonthlyRevenueDto
         {
             Year = year, Month = month,
-            TotalRevenue = records.Where(r => r.Status == PaymentStatus.Paid).Sum(r => r.FinalAmount),
-            TotalTransactions = records.Count,
-            PaidAmount = records.Where(r => r.Status == PaymentStatus.Paid).Sum(r => r.FinalAmount),
-            PendingAmount = records.Where(r => r.Status == PaymentStatus.Pending).Sum(r => r.FinalAmount),
-            RefundedAmount = records.Where(r => r.Status == PaymentStatus.Refunded).Sum(r => r.FinalAmount),
-            WaivedAmount = records.Where(r => r.Status == PaymentStatus.Waived).Sum(r => r.FinalAmount),
+            TotalRevenue = AmountOf(PaymentStatus.Paid),
+            TotalTransactions = byStatus.Sum(s => s.Count),
+            PaidAmount = AmountOf(PaymentStatus.Paid),
+            PendingAmount = AmountOf(PaymentStatus.Pending),
+            RefundedAmount = AmountOf(PaymentStatus.Refunded),
+            WaivedAmount = AmountOf(PaymentStatus.Waived),
         };
     }
 
@@ -72,29 +76,34 @@ public class ReportService
 
     public async Task<PackageStatsDto> GetPackageStatsAsync()
     {
-        var packages = await _db.ClientPackages
-            .Include(cp => cp.ClientProfile)
-            .Include(cp => cp.Package)
-            .ToListAsync();
+        // 原本載入全部套餐並 Include 個案，會解密每位個案的 14 個個資欄位；改為資料庫端計數，
+        // 只有「低剩餘」清單需要個案姓名，只解密這幾筆的姓名
+        var countByStatus = await _db.ClientPackages
+            .GroupBy(cp => cp.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Status, x => x.Count);
 
-        var paymentRecords = await _db.PaymentRecords
+        var packageRevenue = await _db.PaymentRecords
             .Where(r => r.PaymentType == PaymentTypes.PackagePurchase && r.Status == PaymentStatus.Paid)
-            .ToListAsync();
+            .SumAsync(r => r.FinalAmount);
+
+        var lowRemaining = await _db.ClientPackages
+            .Where(p => p.Status == ClientPackageStatus.Active && p.SessionsRemaining <= 2)
+            .OrderBy(p => p.Id)
+            .Select(p => new PackageRemainingDto
+            {
+                ClientPackageId = p.Id, ClientName = p.ClientProfile.Name,
+                PackageName = p.Package.Name, SessionsRemaining = p.SessionsRemaining,
+                ExpiresAt = p.ExpiresAt,
+            }).ToListAsync();
 
         return new PackageStatsDto
         {
-            ActivePackages = packages.Count(p => p.Status == ClientPackageStatus.Active),
-            ExpiredPackages = packages.Count(p => p.Status == ClientPackageStatus.Expired),
-            CompletedPackages = packages.Count(p => p.Status == ClientPackageStatus.Completed),
-            TotalPackageRevenue = paymentRecords.Sum(r => r.FinalAmount),
-            LowRemaining = packages
-                .Where(p => p.Status == ClientPackageStatus.Active && p.SessionsRemaining <= 2)
-                .Select(p => new PackageRemainingDto
-                {
-                    ClientPackageId = p.Id, ClientName = p.ClientProfile.Name,
-                    PackageName = p.Package.Name, SessionsRemaining = p.SessionsRemaining,
-                    ExpiresAt = p.ExpiresAt,
-                }).ToList(),
+            ActivePackages = countByStatus.GetValueOrDefault(ClientPackageStatus.Active),
+            ExpiredPackages = countByStatus.GetValueOrDefault(ClientPackageStatus.Expired),
+            CompletedPackages = countByStatus.GetValueOrDefault(ClientPackageStatus.Completed),
+            TotalPackageRevenue = packageRevenue,
+            LowRemaining = lowRemaining,
         };
     }
 }

@@ -126,7 +126,7 @@ public class AppointmentSeriesService
     {
         // BR-10: 剩餘 ≤ 2 次的系列
         var today = _clock.Today;
-        var activeSeries = await _db.AppointmentSeries
+        var activeSeries = await _db.AppointmentSeries.AsNoTracking()
             .Include(s => s.ClientProfile)
             .Include(s => s.TherapistUser)
             .Include(s => s.Appointments)
