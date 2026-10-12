@@ -193,7 +193,7 @@ public class NotificationService
 
     public async Task<List<PreferenceResponseDto>> GetPreferencesAsync(int userId)
     {
-        var prefs = await _db.NotificationPreferences
+        var prefs = await _db.NotificationPreferences.AsNoTracking()
             .IgnoreQueryFilters()
             .Where(p => p.UserId == userId)
             .ToListAsync();

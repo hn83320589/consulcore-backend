@@ -20,7 +20,7 @@ public class ClientMemoService
     public async Task<List<ClientMemoResponseDto>> GetByClientAsync(
         int clientProfileId, int currentTherapistUserId)
     {
-        var memos = await _db.ClientMemos
+        var memos = await _db.ClientMemos.AsNoTracking()
             .Include(m => m.TherapistUser)
             .Where(m => m.ClientProfileId == clientProfileId)
             .OrderByDescending(m => m.CreatedAt)

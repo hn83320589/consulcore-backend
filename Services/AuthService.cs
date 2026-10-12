@@ -109,7 +109,7 @@ public class AuthService
 
     public async Task<CurrentUserDto> GetCurrentUserAsync(int userId, int orgId, string? activeRole)
     {
-        var user = await _db.Users
+        var user = await _db.Users.AsNoTracking()
             .IgnoreQueryFilters()
             .Include(u => u.Organization)
             .Include(u => u.UserRoles)

@@ -140,7 +140,7 @@ public class PerformanceService
 
     public async Task<List<PerformanceReviewResponseDto>> GetAllReviewsAsync()
     {
-        var reviews = await _db.PerformanceReviews
+        var reviews = await _db.PerformanceReviews.AsNoTracking()
             .Include(r => r.TherapistUser).Include(r => r.Reviewer)
             .OrderByDescending(r => r.CreatedAt).ToListAsync();
         return reviews.Select(r => MapToDto(r, true)).ToList();
@@ -148,13 +148,17 @@ public class PerformanceService
 
     public async Task<TherapistMetricsDto> GetMetricsAsync(int therapistUserId, DateOnly startDate, DateOnly endDate)
     {
-        var therapist = await _db.Users.FindAsync(therapistUserId)
+        var therapistName = await _db.Users
+            .Where(u => u.Id == therapistUserId)
+            .Select(u => u.DisplayName)
+            .FirstOrDefaultAsync()
             ?? throw new KeyNotFoundException("心理師不存在");
 
+        // 只查計算需要的欄位：載入整筆晤談紀錄會解密每筆 SOAP / 自由文字內容，指標用不到
         var appointments = await _db.Appointments
-            .Include(a => a.ScheduleSlot)
             .Where(a => a.TherapistUserId == therapistUserId
                 && a.ScheduleSlot.Date >= startDate && a.ScheduleSlot.Date <= endDate)
+            .Select(a => new { a.Id, a.Status, a.ScheduleSlot.Date, a.ScheduleSlot.StartTime })
             .ToListAsync();
 
         var totalApts = appointments.Count;
@@ -165,6 +169,7 @@ public class PerformanceService
             .Where(n => n.TherapistUserId == therapistUserId
                 && n.CreatedAt >= startDate.ToDateTime(TimeOnly.MinValue)
                 && n.CreatedAt <= endDate.ToDateTime(TimeOnly.MaxValue))
+            .Select(n => new { n.AppointmentId, n.IsLocked, n.CreatedAt })
             .ToListAsync();
 
         var totalNotes = notes.Count;
@@ -173,8 +178,8 @@ public class PerformanceService
         var avgDelay = notes.Where(n => n.AppointmentId.HasValue).Select(n =>
         {
             var apt = appointments.FirstOrDefault(a => a.Id == n.AppointmentId);
-            if (apt?.ScheduleSlot == null) return 0;
-            var sessionTime = apt.ScheduleSlot.Date.ToDateTime(apt.ScheduleSlot.StartTime);
+            if (apt == null) return 0;
+            var sessionTime = apt.Date.ToDateTime(apt.StartTime);
             return (n.CreatedAt - sessionTime).TotalHours;
         }).DefaultIfEmpty(0).Average();
 
@@ -186,18 +191,19 @@ public class PerformanceService
                 && tc.Status == TherapistClientStatus.Active
                 && tc.CreatedAt <= _clock.UtcNow.AddMonths(-3));
 
-        var payments = await _db.PaymentRecords
-            .Where(r => r.AppointmentId.HasValue
-                && appointments.Select(a => a.Id).Contains(r.AppointmentId.Value))
+        var appointmentIds = appointments.Select(a => a.Id).ToList();
+        var paymentStatuses = await _db.PaymentRecords
+            .Where(r => r.AppointmentId.HasValue && appointmentIds.Contains(r.AppointmentId.Value))
+            .Select(r => r.Status)
             .ToListAsync();
-        var paidPayments = payments.Count(p => p.Status == PaymentStatus.Paid);
+        var paidPayments = paymentStatuses.Count(s => s == PaymentStatus.Paid);
 
         var sessionHours = completed * 50.0m / 60; // assume 50min sessions
 
         return new TherapistMetricsDto
         {
             TherapistUserId = therapistUserId,
-            TherapistName = therapist.DisplayName,
+            TherapistName = therapistName,
             AppointmentCompletionRate = totalApts > 0 ? Math.Round((decimal)completed / totalApts * 100, 1) : 0,
             NoShowRate = totalApts > 0 ? Math.Round((decimal)noShow / totalApts * 100, 1) : 0,
             AvgNoteDelayHours = Math.Round((decimal)avgDelay, 1),
@@ -205,7 +211,7 @@ public class PerformanceService
             ClientRetentionRate = activeClients > 0 ? Math.Round((decimal)longTermClients / activeClients * 100, 1) : 0,
             MonthlySessionCount = completed,
             MonthlySessionHours = sessionHours,
-            PaymentCompletionRate = payments.Count > 0 ? Math.Round((decimal)paidPayments / payments.Count * 100, 1) : 0,
+            PaymentCompletionRate = paymentStatuses.Count > 0 ? Math.Round((decimal)paidPayments / paymentStatuses.Count * 100, 1) : 0,
         };
     }
 

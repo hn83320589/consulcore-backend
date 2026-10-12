@@ -37,7 +37,7 @@ public class ScheduleService
 
     public async Task<ScheduleTemplateResponseDto> GetTemplateByIdAsync(int id)
     {
-        var template = await _db.ScheduleTemplates
+        var template = await _db.ScheduleTemplates.AsNoTracking()
             .Include(t => t.TherapistUser)
             .FirstOrDefaultAsync(t => t.Id == id)
             ?? throw new KeyNotFoundException("班表範本不存在");
