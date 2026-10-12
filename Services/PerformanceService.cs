@@ -107,6 +107,14 @@ public class PerformanceService
         changed += toOpen.Count;
 
         await _db.SaveChangesAsync();
+
+        foreach (var r in expired)
+            await _audit.LogSystemAsync(r.OrganizationId, "visibility_close", "performance_review", r.Id,
+                $"考核 {r.Period} 到期收回");
+        foreach (var r in toOpen)
+            await _audit.LogSystemAsync(r.OrganizationId, "visibility_open", "performance_review", r.Id,
+                $"考核 {r.Period} 依排程開放");
+
         return changed;
     }
 

@@ -328,6 +328,10 @@ public class BillingService
         }
         await _db.SaveChangesAsync();
 
+        foreach (var cp in expired)
+            await _audit.LogSystemAsync(cp.OrganizationId, "expire", "client_package", cp.Id,
+                $"套餐「{cp.Package?.Name}」到期（剩餘 {cp.SessionsRemaining} 次）");
+
         // 觸發點 #7：package_expiring 通知（心理師 + 行政）
         foreach (var cp in expired)
         {

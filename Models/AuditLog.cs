@@ -14,8 +14,9 @@ public class AuditLog
     [Column("organization_id")]
     public int OrganizationId { get; set; }
 
+    /// <summary>null = 系統動作（背景排程），沒有登入的操作者</summary>
     [Column("user_id")]
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
 
     [Required]
     [MaxLength(50)]
@@ -50,5 +51,8 @@ public class AuditLog
     public Organization Organization { get; set; } = null!;
 
     [ForeignKey("UserId")]
-    public User User { get; set; } = null!;
+    public User? User { get; set; }
+
+    /// <summary>系統動作在查詢與匯出時顯示的操作者名稱</summary>
+    public const string SystemActorName = "系統";
 }

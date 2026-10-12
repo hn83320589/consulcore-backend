@@ -293,6 +293,7 @@
 | therapist 預設權限移除 `billing.view`（收費、費率、套餐、折扣、報表、匯出皆 403）；收費與稽核匯出寫入稽核 `export` | ✅ **前端已先完成**（`17bbd08`：個案詳情依 `billing.view` 才顯示 / 抓收費）；收費管理、費率設定頁本來就以路由權限擋下 |
 | 帳號或機構停用後，既有 token 立即失效：任何請求回**空內容的 401** | **無**：F3 規則（帶 token + 空內容的 401 → 登入過期）正好處理 |
 | `POST /api/auth/login` 限流：同一 IP 每分鐘 10 次，超過回 **429**（`ApiResponse`） | **無**（`parseLoginError` 已處理 429） |
+| 背景排程（套餐到期 `expire`、考核依排程開放 / 收回 `visibility_open` / `visibility_close`）寫入稽核；這類紀錄 `userId` 為 **null**、`userName` 為「系統」 | **無**：畫面只顯示 `userName`；`AuditLog.userId` 型別應放寬為 `number \| null` |
 
 ### 5. ✅ 擁有者保護：新的 403 情境
 

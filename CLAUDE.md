@@ -130,6 +130,8 @@ await _audit.LogAsync("update", "session_note", noteId, "解鎖晤談紀錄",
 
 必記觸發點含各資料的**檢視**（ClientProfile GetById/Search、SessionNote by-client/by-appointment）。
 
+背景排程等沒有登入者的動作改用 `IAuditService.LogSystemAsync(organizationId, ...)`：`UserId` 存 null，查詢與匯出時操作者顯示為「系統」（`AuditLog.SystemActorName`）。
+
 ### 6. 背景排程
 
 `ScheduledMaintenanceService`（`IHostedService`，每天診所時間 03:00）跨機構執行系統維護：
