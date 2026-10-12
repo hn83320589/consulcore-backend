@@ -17,76 +17,76 @@ public class BillingController : ControllerBase
 
     [HttpPost("on-completed/{appointmentId}")]
     [Authorize(Policy = Policies.CanCreateBilling)]
-    public async Task<IActionResult> OnCompleted(int appointmentId)
+    public async Task<ActionResult<ApiResponse<PaymentRecordResponseDto?>>> OnCompleted(int appointmentId)
     {
         var userId = User.GetUserId();
         var record = await _billingService.OnAppointmentCompletedAsync(appointmentId, userId);
-        if (record == null)
-            return Ok(ApiResponse<object>.Ok(new { }, "無適用費率，未產生收費記錄"));
-        return Ok(ApiResponse<PaymentRecordResponseDto>.Ok(record, "收費記錄已產生"));
+        return ApiResponse<PaymentRecordResponseDto?>.Ok(record,
+            record == null ? "無適用費率，未產生收費記錄" : "收費記錄已產生");
     }
 
     [HttpPost("purchase-package")]
     [Authorize(Policy = Policies.CanCreateBilling)]
-    public async Task<IActionResult> PurchasePackage([FromBody] PurchasePackageDto dto)
+    public async Task<ActionResult<ApiResponse<ClientPackageResponseDto>>> PurchasePackage([FromBody] PurchasePackageDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var cp = await _billingService.PurchasePackageAsync(dto, orgId, userId);
-        return Ok(ApiResponse<ClientPackageResponseDto>.Ok(cp, "套餐已購買"));
+        return ApiResponse<ClientPackageResponseDto>.Ok(cp, "套餐已購買");
     }
 
     [HttpPost("{id}/confirm")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Confirm(int id, [FromBody] ConfirmPaymentDto dto)
+    public async Task<ActionResult<ApiResponse<PaymentRecordResponseDto>>> Confirm(int id, [FromBody] ConfirmPaymentDto dto)
     {
         var record = await _billingService.ConfirmPaymentAsync(id, dto);
-        return Ok(ApiResponse<PaymentRecordResponseDto>.Ok(record, "已確認收款"));
+        return ApiResponse<PaymentRecordResponseDto>.Ok(record, "已確認收款");
     }
 
     [HttpPost("{id}/refund")]
     [Authorize(Policy = Policies.CanRefundBilling)]
-    public async Task<IActionResult> Refund(int id, [FromBody] RefundDto dto)
+    public async Task<ActionResult<ApiResponse<PaymentRecordResponseDto>>> Refund(int id, [FromBody] RefundDto dto)
     {
         var record = await _billingService.RefundAsync(id, dto);
-        return Ok(ApiResponse<PaymentRecordResponseDto>.Ok(record, "已退費"));
+        return ApiResponse<PaymentRecordResponseDto>.Ok(record, "已退費");
     }
 
     [HttpPost("{id}/waive")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Waive(int id)
+    public async Task<ActionResult<ApiResponse<PaymentRecordResponseDto>>> Waive(int id)
     {
         var record = await _billingService.WaiveAsync(id);
-        return Ok(ApiResponse<PaymentRecordResponseDto>.Ok(record, "已免除收費"));
+        return ApiResponse<PaymentRecordResponseDto>.Ok(record, "已免除收費");
     }
 
     [HttpGet("pending")]
-    public async Task<IActionResult> Pending()
+    public async Task<ActionResult<ApiResponse<List<PaymentRecordResponseDto>>>> Pending()
     {
         var records = await _billingService.GetPendingAsync();
-        return Ok(ApiResponse<List<PaymentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<PaymentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult<ApiResponse<List<PaymentRecordResponseDto>>>> GetAll(
         [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId,
         [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
         var records = await _billingService.GetPaymentsAsync(
             startDate, endDate, clientProfileId, therapistUserId, status, page, pageSize);
-        return Ok(ApiResponse<List<PaymentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<PaymentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet("packages")]
-    public async Task<IActionResult> Packages(
+    public async Task<ActionResult<ApiResponse<List<ClientPackageResponseDto>>>> Packages(
         [FromQuery] int? clientProfileId, [FromQuery] string? status)
     {
         var packages = await _billingService.GetClientPackagesAsync(clientProfileId, status);
-        return Ok(ApiResponse<List<ClientPackageResponseDto>>.Ok(packages));
+        return ApiResponse<List<ClientPackageResponseDto>>.Ok(packages);
     }
 
     [HttpGet("export")]
+    [ProducesResponseType<FileResult>(StatusCodes.Status200OK, "text/csv")]
     public async Task<IActionResult> Export(
         [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate,
         [FromQuery] int? clientProfileId, [FromQuery] int? therapistUserId, [FromQuery] string? status)

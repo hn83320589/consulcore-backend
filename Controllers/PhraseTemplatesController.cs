@@ -20,35 +20,35 @@ public class PhraseTemplatesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<PhraseTemplateResponseDto>>>> GetAll()
     {
         var userId = User.GetUserId();
         var phrases = await _phraseService.GetAllAsync(userId);
-        return Ok(ApiResponse<List<PhraseTemplateResponseDto>>.Ok(phrases));
+        return ApiResponse<List<PhraseTemplateResponseDto>>.Ok(phrases);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreatePhraseTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<PhraseTemplateResponseDto>>> Create([FromBody] CreatePhraseTemplateDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var phrase = await _phraseService.CreateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已建立"));
+        return ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已建立");
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdatePhraseTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<PhraseTemplateResponseDto>>> Update(int id, [FromBody] UpdatePhraseTemplateDto dto)
     {
         var userId = User.GetUserId();
         var phrase = await _phraseService.UpdateAsync(id, dto, userId);
-        return Ok(ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已更新"));
+        return ApiResponse<PhraseTemplateResponseDto>.Ok(phrase, "常用語範本已更新");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         var userId = User.GetUserId();
         await _phraseService.DeleteAsync(id, userId);
-        return Ok(ApiResponse<object>.Ok(new { }, "常用語範本已刪除"));
+        return ApiResponse<object>.Ok(new { }, "常用語範本已刪除");
     }
 }

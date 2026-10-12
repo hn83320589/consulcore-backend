@@ -21,52 +21,52 @@ public class FormTemplatesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<FormTemplateResponseDto>>>> GetAll()
     {
         var templates = await _formService.GetAllTemplatesAsync();
-        return Ok(ApiResponse<List<FormTemplateResponseDto>>.Ok(templates));
+        return ApiResponse<List<FormTemplateResponseDto>>.Ok(templates);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<FormTemplateResponseDto>>> GetById(int id)
     {
         var template = await _formService.GetTemplateByIdAsync(id);
-        return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template));
+        return ApiResponse<FormTemplateResponseDto>.Ok(template);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanManageOrgSettings)]
-    public async Task<IActionResult> Create([FromBody] CreateFormTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<FormTemplateResponseDto>>> Create([FromBody] CreateFormTemplateDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var template = await _formService.CreateTemplateAsync(dto, orgId, userId);
-        return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已建立"));
+        return ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanManageOrgSettings)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateFormTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<FormTemplateResponseDto>>> Update(int id, [FromBody] UpdateFormTemplateDto dto)
     {
         var template = await _formService.UpdateTemplateAsync(id, dto);
-        return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已更新"));
+        return ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanManageOrgSettings)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _formService.DeleteTemplateAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "表單範本已刪除"));
+        return ApiResponse<object>.Ok(new { }, "表單範本已刪除");
     }
 
     [HttpPost("{id}/clone")]
     [Authorize(Policy = Policies.CanManageOrgSettings)]
-    public async Task<IActionResult> Clone(int id)
+    public async Task<ActionResult<ApiResponse<FormTemplateResponseDto>>> Clone(int id)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var template = await _formService.CloneTemplateAsync(id, orgId, userId);
-        return Ok(ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已複製"));
+        return ApiResponse<FormTemplateResponseDto>.Ok(template, "表單範本已複製");
     }
 }

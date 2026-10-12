@@ -21,42 +21,42 @@ public class ScheduleTemplatesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Policies.CanViewSchedules)]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<ScheduleTemplateResponseDto>>>> GetAll()
     {
         var templates = await _scheduleService.GetAllTemplatesAsync();
-        return Ok(ApiResponse<List<ScheduleTemplateResponseDto>>.Ok(templates));
+        return ApiResponse<List<ScheduleTemplateResponseDto>>.Ok(templates);
     }
 
     [HttpGet("{id}")]
     [Authorize(Policy = Policies.CanViewSchedules)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<ScheduleTemplateResponseDto>>> GetById(int id)
     {
         var template = await _scheduleService.GetTemplateByIdAsync(id);
-        return Ok(ApiResponse<ScheduleTemplateResponseDto>.Ok(template));
+        return ApiResponse<ScheduleTemplateResponseDto>.Ok(template);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateSchedules)]
-    public async Task<IActionResult> Create([FromBody] CreateScheduleTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<ScheduleTemplateResponseDto>>> Create([FromBody] CreateScheduleTemplateDto dto)
     {
         var orgId = User.GetOrganizationId();
         var template = await _scheduleService.CreateTemplateAsync(dto, orgId);
-        return Ok(ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已建立"));
+        return ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanUpdateSchedules)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateScheduleTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<ScheduleTemplateResponseDto>>> Update(int id, [FromBody] UpdateScheduleTemplateDto dto)
     {
         var template = await _scheduleService.UpdateTemplateAsync(id, dto);
-        return Ok(ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已更新"));
+        return ApiResponse<ScheduleTemplateResponseDto>.Ok(template, "班表範本已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanDeleteSchedules)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _scheduleService.DeleteTemplateAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "班表範本已刪除"));
+        return ApiResponse<object>.Ok(new { }, "班表範本已刪除");
     }
 }

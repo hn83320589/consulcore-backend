@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 
 namespace consulcore_backend.DTOs.ClientProfile;
 
@@ -19,5 +21,6 @@ public class TransferTherapistDto
 public class ChangeStatusDto
 {
     [Required]
+    [ConstantValues(typeof(ClientStatus))]
     public string Status { get; set; } = string.Empty;
 }

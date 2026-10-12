@@ -21,3 +21,8 @@ public class AssignTherapistToRoomDto
 {
     public int TherapistUserId { get; set; }
 }
+
+public class RoomActiveCountDto
+{
+    public int ActiveCount { get; set; }
+}

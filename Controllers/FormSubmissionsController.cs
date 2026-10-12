@@ -21,27 +21,27 @@ public class FormSubmissionsController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = Policies.CanUpdateClients)]
-    public async Task<IActionResult> Submit([FromBody] SubmitFormDto dto)
+    public async Task<ActionResult<ApiResponse<FormSubmissionResponseDto>>> Submit([FromBody] SubmitFormDto dto)
     {
         var orgId = User.GetOrganizationId();
         var userId = User.GetUserId();
         var submission = await _formService.SubmitFormAsync(dto, orgId, userId);
-        return Ok(ApiResponse<FormSubmissionResponseDto>.Ok(submission, "表單已提交"));
+        return ApiResponse<FormSubmissionResponseDto>.Ok(submission, "表單已提交");
     }
 
     [HttpGet("{id}")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<FormSubmissionResponseDto>>> GetById(int id)
     {
         var submission = await _formService.GetSubmissionByIdAsync(id);
-        return Ok(ApiResponse<FormSubmissionResponseDto>.Ok(submission));
+        return ApiResponse<FormSubmissionResponseDto>.Ok(submission);
     }
 
     [HttpGet("by-client/{clientProfileId}")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetByClient(int clientProfileId)
+    public async Task<ActionResult<ApiResponse<List<FormSubmissionResponseDto>>>> GetByClient(int clientProfileId)
     {
         var submissions = await _formService.GetSubmissionsByClientAsync(clientProfileId);
-        return Ok(ApiResponse<List<FormSubmissionResponseDto>>.Ok(submissions));
+        return ApiResponse<List<FormSubmissionResponseDto>>.Ok(submissions);
     }
 }

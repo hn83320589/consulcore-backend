@@ -17,30 +17,30 @@ public class ReportsController : ControllerBase
     public ReportsController(ReportService reportService) { _reportService = reportService; }
 
     [HttpGet("monthly-revenue")]
-    public async Task<IActionResult> MonthlyRevenue([FromQuery] int year, [FromQuery] int month)
+    public async Task<ActionResult<ApiResponse<MonthlyRevenueDto>>> MonthlyRevenue([FromQuery] int year, [FromQuery] int month)
     {
         var report = await _reportService.GetMonthlyRevenueAsync(year, month);
-        return Ok(ApiResponse<MonthlyRevenueDto>.Ok(report));
+        return ApiResponse<MonthlyRevenueDto>.Ok(report);
     }
 
     [HttpGet("by-therapist")]
-    public async Task<IActionResult> ByTherapist([FromQuery] int year, [FromQuery] int month)
+    public async Task<ActionResult<ApiResponse<List<TherapistRevenueDto>>>> ByTherapist([FromQuery] int year, [FromQuery] int month)
     {
         var report = await _reportService.GetRevenueByTherapistAsync(year, month);
-        return Ok(ApiResponse<List<TherapistRevenueDto>>.Ok(report));
+        return ApiResponse<List<TherapistRevenueDto>>.Ok(report);
     }
 
     [HttpGet("pending")]
-    public async Task<IActionResult> Pending()
+    public async Task<ActionResult<ApiResponse<List<PaymentRecordResponseDto>>>> Pending()
     {
         var records = await _reportService.GetPendingPaymentsAsync();
-        return Ok(ApiResponse<List<PaymentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<PaymentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet("package-stats")]
-    public async Task<IActionResult> PackageStats()
+    public async Task<ActionResult<ApiResponse<PackageStatsDto>>> PackageStats()
     {
         var stats = await _reportService.GetPackageStatsAsync();
-        return Ok(ApiResponse<PackageStatsDto>.Ok(stats));
+        return ApiResponse<PackageStatsDto>.Ok(stats);
     }
 }

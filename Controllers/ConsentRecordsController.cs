@@ -29,40 +29,40 @@ public class ConsentRecordsController : ControllerBase
 
     [HttpPost("sign")]
     [Authorize(Policy = Policies.CanCreateConsents)]
-    public async Task<IActionResult> Sign([FromBody] SignConsentDto dto)
+    public async Task<ActionResult<ApiResponse<ConsentRecordResponseDto>>> Sign([FromBody] SignConsentDto dto)
     {
         var orgId = User.GetOrganizationId();
         var record = await _consentService.SignConsentAsync(dto, orgId);
-        return Ok(ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已簽署"));
+        return ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已簽署");
     }
 
     [HttpPost("{id}/void")]
     [Authorize(Policy = Policies.CanVoidConsents)]
-    public async Task<IActionResult> Void(int id, [FromBody] VoidConsentDto dto)
+    public async Task<ActionResult<ApiResponse<ConsentRecordResponseDto>>> Void(int id, [FromBody] VoidConsentDto dto)
     {
         var record = await _consentService.VoidConsentAsync(id, dto);
-        return Ok(ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已作廢"));
+        return ApiResponse<ConsentRecordResponseDto>.Ok(record, "同意書已作廢");
     }
 
     [HttpGet]
     [Authorize(Policy = Policies.CanViewConsents)]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult<ApiResponse<List<ConsentRecordResponseDto>>>> GetAll(
         [FromQuery] int? clientProfileId, [FromQuery] string? status, [FromQuery] string? triggerEvent)
     {
         // 非 staff 身份一律限縮為自己的簽署紀錄，忽略傳入的 clientProfileId（防越權）
         if (!ActingAsVerifiedNonClient())
         {
             var own = await CurrentClientProfileIdAsync();
-            if (own == null) return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok([]));
+            if (own == null) return ApiResponse<List<ConsentRecordResponseDto>>.Ok([]);
             clientProfileId = own;
         }
         var records = await _consentService.GetRecordsAsync(clientProfileId, status, triggerEvent);
-        return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<ConsentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet("by-client/{clientProfileId}")]
     [Authorize(Policy = Policies.CanViewConsents)]
-    public async Task<IActionResult> GetByClient(int clientProfileId)
+    public async Task<ActionResult<ApiResponse<List<ConsentRecordResponseDto>>>> GetByClient(int clientProfileId)
     {
         // 非 staff 身份只能查自己的簽署紀錄（IDOR 防護）
         if (!ActingAsVerifiedNonClient())
@@ -73,18 +73,18 @@ public class ConsentRecordsController : ControllerBase
         }
 
         var records = await _consentService.GetRecordsByClientAsync(clientProfileId);
-        return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<ConsentRecordResponseDto>>.Ok(records);
     }
 
     [HttpGet("by-trigger-event/{triggerEvent}")]
     [Authorize(Policy = Policies.CanViewConsents)]
-    public async Task<IActionResult> GetByTriggerEvent(string triggerEvent)
+    public async Task<ActionResult<ApiResponse<List<ConsentRecordResponseDto>>>> GetByTriggerEvent(string triggerEvent)
     {
         // 依觸發事件跨個案瀏覽為 staff 視圖，非 staff 身份無權存取
         if (!ActingAsVerifiedNonClient())
             throw new ForbiddenException("無權存取此清單");
 
         var records = await _consentService.GetRecordsByTriggerEventAsync(triggerEvent);
-        return Ok(ApiResponse<List<ConsentRecordResponseDto>>.Ok(records));
+        return ApiResponse<List<ConsentRecordResponseDto>>.Ok(records);
     }
 }

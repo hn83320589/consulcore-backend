@@ -20,60 +20,60 @@ public class RoomsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<RoomResponseDto>>>> GetAll()
     {
         var rooms = await _roomService.GetAllAsync();
-        return Ok(ApiResponse<List<RoomResponseDto>>.Ok(rooms));
+        return ApiResponse<List<RoomResponseDto>>.Ok(rooms);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<RoomResponseDto>>> GetById(int id)
     {
         var room = await _roomService.GetByIdAsync(id);
-        return Ok(ApiResponse<RoomResponseDto>.Ok(room));
+        return ApiResponse<RoomResponseDto>.Ok(room);
     }
 
     [HttpGet("active-count")]
-    public async Task<IActionResult> GetActiveCount()
+    public async Task<ActionResult<ApiResponse<RoomActiveCountDto>>> GetActiveCount()
     {
         var count = await _roomService.GetActiveCountAsync();
-        return Ok(ApiResponse<object>.Ok(new { activeCount = count }));
+        return ApiResponse<RoomActiveCountDto>.Ok(new RoomActiveCountDto { ActiveCount = count });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateRoomDto dto)
+    public async Task<ActionResult<ApiResponse<RoomResponseDto>>> Create([FromBody] CreateRoomDto dto)
     {
         var orgId = User.GetOrganizationId();
         var room = await _roomService.CreateAsync(dto, orgId);
-        return Ok(ApiResponse<RoomResponseDto>.Ok(room, "診間已建立"));
+        return ApiResponse<RoomResponseDto>.Ok(room, "診間已建立");
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateRoomDto dto)
+    public async Task<ActionResult<ApiResponse<RoomResponseDto>>> Update(int id, [FromBody] UpdateRoomDto dto)
     {
         var room = await _roomService.UpdateAsync(id, dto);
-        return Ok(ApiResponse<RoomResponseDto>.Ok(room, "診間已更新"));
+        return ApiResponse<RoomResponseDto>.Ok(room, "診間已更新");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _roomService.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "診間已刪除"));
+        return ApiResponse<object>.Ok(new { }, "診間已刪除");
     }
 
     [HttpPost("{id}/assign-therapist")]
-    public async Task<IActionResult> AssignTherapist(int id, [FromBody] AssignTherapistToRoomDto dto)
+    public async Task<ActionResult<ApiResponse<RoomResponseDto>>> AssignTherapist(int id, [FromBody] AssignTherapistToRoomDto dto)
     {
         var orgId = User.GetOrganizationId();
         var room = await _roomService.AssignTherapistAsync(id, dto, orgId);
-        return Ok(ApiResponse<RoomResponseDto>.Ok(room, "心理師已指派至診間"));
+        return ApiResponse<RoomResponseDto>.Ok(room, "心理師已指派至診間");
     }
 
     [HttpDelete("{id}/therapist/{therapistUserId}")]
-    public async Task<IActionResult> RemoveTherapist(int id, int therapistUserId)
+    public async Task<ActionResult<ApiResponse<RoomResponseDto>>> RemoveTherapist(int id, int therapistUserId)
     {
         var room = await _roomService.RemoveTherapistAsync(id, therapistUserId);
-        return Ok(ApiResponse<RoomResponseDto>.Ok(room, "心理師已從診間移除"));
+        return ApiResponse<RoomResponseDto>.Ok(room, "心理師已從診間移除");
     }
 }

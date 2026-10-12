@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
 
 namespace consulcore_backend.DTOs.PerformanceReview;
 
@@ -24,6 +26,7 @@ public class UpdatePerformanceReviewDto
 
 public class SetVisibilityDto
 {
+    [ConstantValues(typeof(ReviewVisibility))]
     [Required] public string Visibility { get; set; } = "hidden";
     public DateTime? VisibleFrom { get; set; }
     public DateTime? VisibleUntil { get; set; }
@@ -42,6 +45,7 @@ public class PerformanceReviewResponseDto
     public int TeamworkScore { get; set; }
     public int OverallScore { get; set; }
     public string? Comment { get; set; }
+    [ConstantValues(typeof(ReviewVisibility))]
     public string Visibility { get; set; } = string.Empty;
     public DateTime? VisibleFrom { get; set; }
     public DateTime? VisibleUntil { get; set; }

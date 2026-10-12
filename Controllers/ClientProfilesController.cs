@@ -30,111 +30,111 @@ public class ClientProfilesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<ClientProfileResponseDto>>>> GetAll()
     {
         // BR-01：therapist 僅能看到自己被指派的個案；owner/admin 看全機構
         if (!HasFullClientScope())
         {
             var own = await _clientService.GetByTherapistAsync(CurrentUserId());
-            return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(own));
+            return ApiResponse<List<ClientProfileResponseDto>>.Ok(own);
         }
 
         var clients = await _clientService.GetAllAsync();
-        return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));
+        return ApiResponse<List<ClientProfileResponseDto>>.Ok(clients);
     }
 
     [HttpGet("{id}")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> GetById(int id)
     {
         // 代診/交接：therapist 可唯讀非自己指派的個案，但跨心理師檢視須留稽核（見決策 locum-readonly-clinical-records）
         var crossTherapist = !HasFullClientScope()
             && !await _clientService.IsAssignedToTherapistAsync(id, CurrentUserId());
 
         var client = await _clientService.ViewByIdAsync(id, crossTherapist);
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client);
     }
 
     [HttpGet("by-therapist/{therapistUserId}")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetByTherapist(int therapistUserId)
+    public async Task<ActionResult<ApiResponse<List<ClientProfileResponseDto>>>> GetByTherapist(int therapistUserId)
     {
         // therapist 僅能查詢自己的個案清單
         if (!HasFullClientScope() && therapistUserId != CurrentUserId())
             throw new ForbiddenException("無權存取其他心理師的個案");
 
         var clients = await _clientService.GetByTherapistAsync(therapistUserId);
-        return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));
+        return ApiResponse<List<ClientProfileResponseDto>>.Ok(clients);
     }
 
     [HttpGet("my-clients")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> GetMyClients()
+    public async Task<ActionResult<ApiResponse<List<ClientProfileResponseDto>>>> GetMyClients()
     {
         var userId = User.GetUserId();
         var clients = await _clientService.GetByTherapistAsync(userId);
-        return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));
+        return ApiResponse<List<ClientProfileResponseDto>>.Ok(clients);
     }
 
     [HttpGet("search")]
     [Authorize(Policy = Policies.CanViewClients)]
-    public async Task<IActionResult> Search([FromQuery] string? keyword, [FromQuery] string? idNumberLast4)
+    public async Task<ActionResult<ApiResponse<List<ClientProfileResponseDto>>>> Search([FromQuery] string? keyword, [FromQuery] string? idNumberLast4)
     {
         // therapist 的搜尋結果僅限自己被指派的個案
         int? scopeTherapistUserId = HasFullClientScope() ? null : CurrentUserId();
         var clients = await _clientService.SearchAsync(keyword, idNumberLast4, scopeTherapistUserId);
-        return Ok(ApiResponse<List<ClientProfileResponseDto>>.Ok(clients));
+        return ApiResponse<List<ClientProfileResponseDto>>.Ok(clients);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateClients)]
-    public async Task<IActionResult> Create([FromBody] CreateClientProfileDto dto)
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> Create([FromBody] CreateClientProfileDto dto)
     {
         var orgId = User.GetOrganizationId();
         var client = await _clientService.CreateAsync(dto, orgId);
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已建立"));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanUpdateClients)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateClientProfileDto dto)
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> Update(int id, [FromBody] UpdateClientProfileDto dto)
     {
         var client = await _clientService.UpdateAsync(id, dto, CurrentUserId(), HasFullClientScope());
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已更新"));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanDeleteClients)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _clientService.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "個案已刪除"));
+        return ApiResponse<object>.Ok(new { }, "個案已刪除");
     }
 
     [HttpPost("{id}/assign-therapist")]
     [Authorize(Policy = Policies.CanManageClients)]
-    public async Task<IActionResult> AssignTherapist(int id, [FromBody] AssignTherapistDto dto)
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> AssignTherapist(int id, [FromBody] AssignTherapistDto dto)
     {
         var orgId = User.GetOrganizationId();
         var client = await _clientService.AssignTherapistAsync(id, dto, orgId);
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "心理師已指派"));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client, "心理師已指派");
     }
 
     [HttpPost("{id}/transfer-therapist/{currentTherapistUserId}")]
     [Authorize(Policy = Policies.CanManageClients)]
-    public async Task<IActionResult> TransferTherapist(
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> TransferTherapist(
         int id, int currentTherapistUserId, [FromBody] TransferTherapistDto dto)
     {
         var orgId = User.GetOrganizationId();
         var client = await _clientService.TransferTherapistAsync(id, currentTherapistUserId, dto, orgId);
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已移轉"));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client, "個案已移轉");
     }
 
     [HttpPatch("{id}/status")]
     [Authorize(Policy = Policies.CanManageClients)]
-    public async Task<IActionResult> ChangeStatus(int id, [FromBody] ChangeStatusDto dto)
+    public async Task<ActionResult<ApiResponse<ClientProfileResponseDto>>> ChangeStatus(int id, [FromBody] ChangeStatusDto dto)
     {
         var client = await _clientService.ChangeStatusAsync(id, dto);
-        return Ok(ApiResponse<ClientProfileResponseDto>.Ok(client, "狀態已變更"));
+        return ApiResponse<ClientProfileResponseDto>.Ok(client, "狀態已變更");
     }
 }

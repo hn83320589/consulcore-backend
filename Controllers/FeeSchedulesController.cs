@@ -16,34 +16,34 @@ public class FeeSchedulesController : ControllerBase
     public FeeSchedulesController(FeeScheduleService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<FeeScheduleResponseDto>>>> GetAll()
     {
         var fees = await _service.GetAllAsync();
-        return Ok(ApiResponse<List<FeeScheduleResponseDto>>.Ok(fees));
+        return ApiResponse<List<FeeScheduleResponseDto>>.Ok(fees);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateBilling)]
-    public async Task<IActionResult> Create([FromBody] CreateFeeScheduleDto dto)
+    public async Task<ActionResult<ApiResponse<FeeScheduleResponseDto>>> Create([FromBody] CreateFeeScheduleDto dto)
     {
         var orgId = User.GetOrganizationId();
         var fee = await _service.CreateAsync(dto, orgId);
-        return Ok(ApiResponse<FeeScheduleResponseDto>.Ok(fee, "費率已建立"));
+        return ApiResponse<FeeScheduleResponseDto>.Ok(fee, "費率已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateFeeScheduleDto dto)
+    public async Task<ActionResult<ApiResponse<FeeScheduleResponseDto>>> Update(int id, [FromBody] UpdateFeeScheduleDto dto)
     {
         var fee = await _service.UpdateAsync(id, dto);
-        return Ok(ApiResponse<FeeScheduleResponseDto>.Ok(fee, "費率已更新"));
+        return ApiResponse<FeeScheduleResponseDto>.Ok(fee, "費率已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanUpdateBilling)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _service.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "費率已刪除"));
+        return ApiResponse<object>.Ok(new { }, "費率已刪除");
     }
 }

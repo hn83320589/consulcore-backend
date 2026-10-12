@@ -22,52 +22,52 @@ public class UsersController : ControllerBase
     private bool ActingAsOwner => ActiveRoleScope.ActingAsVerified(Request, User, Roles.Owner);
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<UserResponseDto>>>> GetAll()
     {
         var users = await _userService.GetAllAsync();
-        return Ok(ApiResponse<List<UserResponseDto>>.Ok(users));
+        return ApiResponse<List<UserResponseDto>>.Ok(users);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<UserResponseDto>>> GetById(int id)
     {
         var user = await _userService.GetByIdAsync(id);
-        return Ok(ApiResponse<UserResponseDto>.Ok(user));
+        return ApiResponse<UserResponseDto>.Ok(user);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
+    public async Task<ActionResult<ApiResponse<UserResponseDto>>> Create([FromBody] CreateUserDto dto)
     {
         var orgId = User.GetOrganizationId();
         var user = await _userService.CreateAsync(dto, orgId, ActingAsOwner);
-        return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已建立"));
+        return ApiResponse<UserResponseDto>.Ok(user, "使用者已建立");
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateUserDto dto)
+    public async Task<ActionResult<ApiResponse<UserResponseDto>>> Update(int id, [FromBody] UpdateUserDto dto)
     {
         var user = await _userService.UpdateAsync(id, dto, ActingAsOwner);
-        return Ok(ApiResponse<UserResponseDto>.Ok(user, "使用者已更新"));
+        return ApiResponse<UserResponseDto>.Ok(user, "使用者已更新");
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _userService.DeleteAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "使用者已刪除"));
+        return ApiResponse<object>.Ok(new { }, "使用者已刪除");
     }
 
     [HttpPost("{id}/reset-password")]
-    public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordDto dto)
+    public async Task<ActionResult<ApiResponse<object>>> ResetPassword(int id, [FromBody] ResetPasswordDto dto)
     {
         await _userService.ResetPasswordAsync(id, dto, ActingAsOwner);
-        return Ok(ApiResponse<object>.Ok(new { }, "密碼已重設"));
+        return ApiResponse<object>.Ok(new { }, "密碼已重設");
     }
 
     [HttpPatch("{id}/toggle-active")]
-    public async Task<IActionResult> ToggleActive(int id)
+    public async Task<ActionResult<ApiResponse<UserResponseDto>>> ToggleActive(int id)
     {
         var user = await _userService.ToggleActiveAsync(id, ActingAsOwner);
-        return Ok(ApiResponse<UserResponseDto>.Ok(user));
+        return ApiResponse<UserResponseDto>.Ok(user);
     }
 }

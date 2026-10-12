@@ -16,18 +16,18 @@ public class NotificationPreferencesController : ControllerBase
     public NotificationPreferencesController(NotificationService service) { _service = service; }
 
     [HttpGet]
-    public async Task<IActionResult> Get()
+    public async Task<ActionResult<ApiResponse<List<PreferenceResponseDto>>>> Get()
     {
         var userId = User.GetUserId();
         var prefs = await _service.GetPreferencesAsync(userId);
-        return Ok(ApiResponse<List<PreferenceResponseDto>>.Ok(prefs));
+        return ApiResponse<List<PreferenceResponseDto>>.Ok(prefs);
     }
 
     [HttpPut]
-    public async Task<IActionResult> Update([FromBody] UpdatePreferenceDto dto)
+    public async Task<ActionResult<ApiResponse<object>>> Update([FromBody] UpdatePreferenceDto dto)
     {
         var userId = User.GetUserId();
         await _service.UpdatePreferenceAsync(userId, dto);
-        return Ok(ApiResponse<object>.Ok(new { }, "偏好已更新"));
+        return ApiResponse<object>.Ok(new { }, "偏好已更新");
     }
 }

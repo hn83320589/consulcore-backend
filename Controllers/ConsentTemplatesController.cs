@@ -21,42 +21,42 @@ public class ConsentTemplatesController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = Policies.CanViewConsents)]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<ConsentTemplateResponseDto>>>> GetAll()
     {
         var templates = await _consentService.GetAllTemplatesAsync();
-        return Ok(ApiResponse<List<ConsentTemplateResponseDto>>.Ok(templates));
+        return ApiResponse<List<ConsentTemplateResponseDto>>.Ok(templates);
     }
 
     [HttpGet("{id}")]
     [Authorize(Policy = Policies.CanViewConsents)]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<ActionResult<ApiResponse<ConsentTemplateResponseDto>>> GetById(int id)
     {
         var template = await _consentService.GetTemplateByIdAsync(id);
-        return Ok(ApiResponse<ConsentTemplateResponseDto>.Ok(template));
+        return ApiResponse<ConsentTemplateResponseDto>.Ok(template);
     }
 
     [HttpPost]
     [Authorize(Policy = Policies.CanCreateConsents)]
-    public async Task<IActionResult> Create([FromBody] CreateConsentTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<ConsentTemplateResponseDto>>> Create([FromBody] CreateConsentTemplateDto dto)
     {
         var orgId = User.GetOrganizationId();
         var template = await _consentService.CreateTemplateAsync(dto, orgId);
-        return Ok(ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已建立"));
+        return ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已建立");
     }
 
     [HttpPut("{id}")]
     [Authorize(Policy = Policies.CanUpdateConsents)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateConsentTemplateDto dto)
+    public async Task<ActionResult<ApiResponse<ConsentTemplateResponseDto>>> Update(int id, [FromBody] UpdateConsentTemplateDto dto)
     {
         var template = await _consentService.UpdateTemplateAsync(id, dto);
-        return Ok(ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已更新"));
+        return ApiResponse<ConsentTemplateResponseDto>.Ok(template, "同意書範本已更新");
     }
 
     [HttpDelete("{id}")]
     [Authorize(Policy = Policies.CanUpdateConsents)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<ActionResult<ApiResponse<object>>> Delete(int id)
     {
         await _consentService.DeleteTemplateAsync(id);
-        return Ok(ApiResponse<object>.Ok(new { }, "同意書範本已刪除"));
+        return ApiResponse<object>.Ok(new { }, "同意書範本已刪除");
     }
 }

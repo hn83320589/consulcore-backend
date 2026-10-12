@@ -1,9 +1,13 @@
+using consulcore_backend.Models;
+using consulcore_backend.OpenApi;
+
 namespace consulcore_backend.DTOs.FormTemplate;
 
 public class FormTemplateResponseDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    [ConstantValues(typeof(FormTemplateType))]
     public string Type { get; set; } = string.Empty;
     public bool IsSystemDefault { get; set; }
     public int Version { get; set; }
@@ -26,6 +30,7 @@ public class FormFieldResponseDto
 {
     public int Id { get; set; }
     public string Label { get; set; } = string.Empty;
+    [ConstantValues(typeof(FieldTypes))]
     public string FieldType { get; set; } = string.Empty;
     public string? Options { get; set; }
     public bool IsRequired { get; set; }

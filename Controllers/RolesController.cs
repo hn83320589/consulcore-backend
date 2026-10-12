@@ -20,17 +20,17 @@ public class RolesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<ApiResponse<List<RoleResponseDto>>>> GetAll()
     {
         var roles = await _rolePermissionService.GetAllRolesAsync();
-        return Ok(ApiResponse<List<RoleResponseDto>>.Ok(roles));
+        return ApiResponse<List<RoleResponseDto>>.Ok(roles);
     }
 
     [HttpPut("{id}/permissions")]
-    public async Task<IActionResult> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsDto dto)
+    public async Task<ActionResult<ApiResponse<RoleResponseDto>>> UpdatePermissions(int id, [FromBody] UpdateRolePermissionsDto dto)
     {
         var actingAsOwner = ActiveRoleScope.ActingAsVerified(Request, User, Roles.Owner);
         var role = await _rolePermissionService.UpdateRolePermissionsAsync(id, dto, actingAsOwner);
-        return Ok(ApiResponse<RoleResponseDto>.Ok(role, "權限已更新"));
+        return ApiResponse<RoleResponseDto>.Ok(role, "權限已更新");
     }
 }
