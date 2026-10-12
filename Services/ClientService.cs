@@ -50,7 +50,7 @@ public class ClientService
     public async Task<ClientProfileResponseDto> ViewByIdAsync(int id, bool crossTherapist = false)
     {
         var dto = await GetByIdAsync(id);
-        var detail = crossTherapist ? $"檢視個案 (id={id})（代診/非指派存取）" : $"檢視個案 (id={id})";
+        var detail = crossTherapist ? $"檢視個案 #{id}（代診／非指派存取）" : $"檢視個案 #{id}";
         await _audit.LogAsync("view", "client_profile", id, detail);
         return dto;
     }
@@ -169,7 +169,7 @@ public class ClientService
             await _db.SaveChangesAsync();
         }
 
-        await _audit.LogAsync("create", "client_profile", client.Id, $"建立個案 (id={client.Id})");
+        await _audit.LogAsync("create", "client_profile", client.Id, $"建立個案 #{client.Id}");
 
         // 通知：account_created
         if (client.UserId.HasValue)
@@ -211,7 +211,7 @@ public class ClientService
         client.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
-        await _audit.LogAsync("update", "client_profile", id, $"更新個案 (id={id})");
+        await _audit.LogAsync("update", "client_profile", id, $"更新個案 #{id}");
 
         return await GetByIdAsync(id);
     }
@@ -241,7 +241,7 @@ public class ClientService
         }
         await _db.SaveChangesAsync();
 
-        await _audit.LogAsync("delete", "client_profile", id, $"刪除個案 (id={id})");
+        await _audit.LogAsync("delete", "client_profile", id, $"刪除個案 #{id}");
     }
 
     public async Task<ClientProfileResponseDto> AssignTherapistAsync(int clientId, AssignTherapistDto dto, int orgId)
@@ -267,7 +267,7 @@ public class ClientService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("assign_therapist", "client_profile", clientId,
-            $"指派心理師 (userId={dto.TherapistUserId}) 給個案 (id={clientId})");
+            $"指派心理師 #{dto.TherapistUserId} 給個案 #{clientId}");
 
         return await GetByIdAsync(clientId);
     }
@@ -298,7 +298,7 @@ public class ClientService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("transfer_therapist", "client_profile", clientId,
-            $"移轉個案 (id={clientId}) 從心理師 {currentTherapistUserId} 到 {dto.NewTherapistUserId}",
+            $"移轉個案 #{clientId}：心理師 #{currentTherapistUserId} → #{dto.NewTherapistUserId}",
             new { from = currentTherapistUserId, to = dto.NewTherapistUserId, reason = dto.Reason });
 
         return await GetByIdAsync(clientId);
@@ -387,7 +387,7 @@ public class ClientService
 
         // 檢視稽核：個案搜尋（不記錄關鍵字明文，避免個資落入稽核描述）
         await _audit.LogAsync("search", "client_profile", 0,
-            $"搜尋個案（keyword={(string.IsNullOrEmpty(keyword) ? "-" : "***")}, idLast4={(string.IsNullOrEmpty(idNumberLast4) ? "-" : "***")}，命中 {clients.Count} 筆）");
+            $"搜尋個案（姓名：{(string.IsNullOrEmpty(keyword) ? "無" : "有")}、身分證末四碼：{(string.IsNullOrEmpty(idNumberLast4) ? "無" : "有")}，命中 {clients.Count} 筆）");
 
         return clients.Select(MapToDto).ToList();
     }

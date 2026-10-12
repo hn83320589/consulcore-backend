@@ -126,7 +126,7 @@ public class ConsentService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("sign", "consent_record", record.Id,
-            $"個案 (id={client.Id}) 簽署同意書「{template.Title}」v{template.Version}");
+            $"個案 #{client.Id} 簽署同意書「{template.Title}」v{template.Version}");
 
         return await GetRecordByIdAsync(record.Id);
     }
@@ -148,7 +148,7 @@ public class ConsentService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("void", "consent_record", recordId,
-            $"作廢同意書記錄 (id={recordId}), 原因: {dto.Reason}");
+            $"作廢同意書紀錄 #{recordId}，原因：{dto.Reason}");
 
         return await GetRecordByIdAsync(recordId);
     }

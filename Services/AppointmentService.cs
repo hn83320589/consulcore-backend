@@ -66,7 +66,7 @@ public class AppointmentService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("create", "appointment", appointment.Id,
-            $"建立預約 (client={dto.ClientProfileId}, slot={slot.Id})");
+            $"建立預約（個案 #{dto.ClientProfileId}、時段 #{slot.Id}）");
 
         // 通知：appointment_created
         var client = await _db.ClientProfiles.FindAsync(dto.ClientProfileId);

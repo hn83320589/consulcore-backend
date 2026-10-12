@@ -205,7 +205,7 @@ public class FormService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("submit", "form_submission", submission.Id,
-            $"提交表單 (template={template.Name}, client={dto.ClientProfileId})");
+            $"提交表單「{template.Name}」（個案 #{dto.ClientProfileId}）");
 
         return await GetSubmissionByIdAsync(submission.Id);
     }
@@ -223,7 +223,7 @@ public class FormService
 
         // 表單填答屬臨床紀錄，代診可讀他人填答 → 留檢視稽核
         await _audit.LogAsync("view", "form_submission", submission.Id,
-            $"檢視表單填答 (id={id}, client={submission.ClientProfileId})");
+            $"檢視表單填答 #{id}（個案 #{submission.ClientProfileId}）");
 
         return new FormSubmissionResponseDto
         {

@@ -106,7 +106,7 @@ public class RoomService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("assign_therapist", "room", roomId,
-            $"指派心理師 (userId={dto.TherapistUserId}) 至診間「{room.Name}」");
+            $"指派心理師 #{dto.TherapistUserId} 至診間「{room.Name}」");
 
         return await GetByIdAsync(roomId);
     }
@@ -121,7 +121,7 @@ public class RoomService
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("remove_therapist", "room", roomId,
-            $"移除心理師 (userId={therapistUserId}) 從診間");
+            $"自診間移除心理師 #{therapistUserId}");
 
         return await GetByIdAsync(roomId);
     }
