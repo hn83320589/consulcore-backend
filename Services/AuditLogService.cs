@@ -42,7 +42,7 @@ public class AuditLogService
             .Take(pageSize)
             .Select(a => new AuditLogResponseDto
             {
-                Id = a.Id, UserId = a.UserId, UserName = a.User.DisplayName,
+                Id = a.Id, UserId = a.UserId, UserName = a.User != null ? a.User.DisplayName : AuditLog.SystemActorName,
                 Action = a.Action, ResourceType = a.ResourceType, ResourceId = a.ResourceId,
                 Description = a.Description, Changes = a.Changes,
                 IpAddress = a.IpAddress, CreatedAt = a.CreatedAt,
@@ -62,7 +62,7 @@ public class AuditLogService
         if (endDate.HasValue) query = query.Where(a => a.CreatedAt <= endDate.Value);
 
         var logs = await query.OrderByDescending(a => a.CreatedAt)
-            .Select(a => new { a.Id, UserName = a.User.DisplayName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.IpAddress, a.CreatedAt })
+            .Select(a => new { a.Id, UserName = a.User != null ? a.User.DisplayName : AuditLog.SystemActorName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.IpAddress, a.CreatedAt })
             .ToListAsync();
 
         // 匯出內容含使用者與操作細節，匯出行為本身也要留痕（在查詢之後寫入，不會出現在這次匯出裡）
@@ -91,7 +91,7 @@ public class AuditLogService
         if (endDate.HasValue) query = query.Where(a => a.CreatedAt <= endDate.Value);
 
         var logs = await query.OrderByDescending(a => a.CreatedAt)
-            .Select(a => new { a.Id, UserName = a.User.DisplayName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.CreatedAt })
+            .Select(a => new { a.Id, UserName = a.User != null ? a.User.DisplayName : AuditLog.SystemActorName, a.Action, a.ResourceType, a.ResourceId, a.Description, a.CreatedAt })
             .ToListAsync();
 
         await _audit.LogAsync("export", "audit_log", 0, $"匯出稽核紀錄 PDF（{logs.Count} 筆）",

@@ -211,7 +211,7 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnType("TEXT")
                         .HasColumnName("resource_type");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("INTEGER")
                         .HasColumnName("user_id");
 
@@ -2110,9 +2110,7 @@ namespace consulcore_backend.Migrations.Sqlite
 
                     b.HasOne("consulcore_backend.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
                     b.Navigation("Organization");
 

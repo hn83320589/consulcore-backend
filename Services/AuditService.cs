@@ -39,21 +39,28 @@ public class AuditService : IAuditService
             return;
         }
 
-        var changesJson = changes != null ? JsonSerializer.Serialize(changes) : null;
+        await WriteAsync(orgId, uid, action, resourceType, resourceId, description, changes,
+            httpContext?.Connection?.RemoteIpAddress?.ToString());
+    }
 
-        var auditLog = new AuditLog
+    public Task LogSystemAsync(int organizationId, string action, string resourceType, int resourceId,
+        string description, object? changes = null) =>
+        WriteAsync(organizationId, null, action, resourceType, resourceId, description, changes, ipAddress: null);
+
+    private async Task WriteAsync(int organizationId, int? userId, string action, string resourceType,
+        int resourceId, string description, object? changes, string? ipAddress)
+    {
+        _db.AuditLogs.Add(new AuditLog
         {
-            OrganizationId = orgId,
-            UserId = uid,
+            OrganizationId = organizationId,
+            UserId = userId,
             Action = action,
             ResourceType = resourceType,
             ResourceId = resourceId,
             Description = description,
-            Changes = changesJson,
-            IpAddress = httpContext?.Connection?.RemoteIpAddress?.ToString()
-        };
-
-        _db.AuditLogs.Add(auditLog);
+            Changes = changes != null ? JsonSerializer.Serialize(changes) : null,
+            IpAddress = ipAddress,
+        });
         await _db.SaveChangesAsync();
 
         _logger.LogInformation(
