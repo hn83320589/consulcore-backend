@@ -105,7 +105,7 @@ public class ConsentService
         if (!template.IsActive)
             throw new BusinessRuleException("此同意書範本已停用");
 
-        var client = await _db.ClientProfiles.FindAsync(dto.ClientProfileId)
+        var client = await _db.ClientProfiles.FirstOrDefaultAsync(c => c.Id == dto.ClientProfileId && !c.IsDeleted)
             ?? throw new KeyNotFoundException("個案不存在");
 
         // BR-14: 保存內容快照與版本號

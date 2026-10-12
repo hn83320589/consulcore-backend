@@ -397,6 +397,10 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnType("TEXT")
                         .HasColumnName("date_of_birth");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("Email")
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
@@ -420,6 +424,10 @@ namespace consulcore_backend.Migrations.Sqlite
                     b.Property<string>("IdNumber")
                         .HasColumnType("TEXT")
                         .HasColumnName("id_number");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("MedicalHistory")
                         .HasColumnType("TEXT")
@@ -1878,6 +1886,10 @@ namespace consulcore_backend.Migrations.Sqlite
                         .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1894,6 +1906,10 @@ namespace consulcore_backend.Migrations.Sqlite
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_deleted");
 
                     b.Property<int>("OrganizationId")
                         .HasColumnType("INTEGER")

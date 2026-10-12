@@ -159,7 +159,7 @@ builder.Services.AddAuthentication(options =>
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var active = await db.Users
                 .IgnoreQueryFilters()
-                .AnyAsync(u => u.Id == userId && u.IsActive && u.Organization.IsActive);
+                .AnyAsync(u => u.Id == userId && u.IsActive && !u.IsDeleted && u.Organization.IsActive);
             if (!active)
                 context.Fail("帳號或機構已停用");
         },

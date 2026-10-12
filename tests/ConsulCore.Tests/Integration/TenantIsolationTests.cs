@@ -28,4 +28,24 @@ public class TenantIsolationTests(ConsulCoreApiFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.NotFound, byId.StatusCode);
         Assert.DoesNotContain(list.EnumerateArray(), c => c.GetProperty("id").GetInt32() == clientId);
     }
+
+    // 建立預約原本不檢查個案，外鍵又不分機構：拿別家機構的個案 id 也能預約成功
+    [Fact]
+    public async Task Cannot_book_an_appointment_for_another_organizations_client()
+    {
+        var clinic = await ClinicScenario.CreateAsync(_api, "iso_book");
+        var otherOwner = await _api.RegisterOrganizationAsync("別家診所", "iso_book_other");
+        var otherClient = await _api.PostOkAsync(otherOwner, "owner", "/api/client-profiles", new { name = "別家個案", createAccount = false });
+        var slot = (await clinic.AvailableSlotsAsync(clinic.Monday)).First();
+
+        var book = await _api.SendAsync(HttpMethod.Post, "/api/appointments", clinic.OwnerToken, "owner", new
+        {
+            clientProfileId = otherClient.GetProperty("id").GetInt32(), scheduleSlotId = slot.GetProperty("id").GetInt32(),
+        });
+
+        Assert.Equal(HttpStatusCode.NotFound, book.StatusCode);
+        // 只看狀態碼不夠：沒檢查時預約其實已寫入，只是回傳時被多租戶 filter 擋住才變成 404
+        Assert.Contains(await clinic.AvailableSlotsAsync(clinic.Monday),
+            s => s.GetProperty("id").GetInt32() == slot.GetProperty("id").GetInt32());
+    }
 }

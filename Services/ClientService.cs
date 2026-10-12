@@ -21,9 +21,12 @@ public class ClientService
         _notify = notify;
     }
 
+    /// <summary>未刪除的個案（D6 軟刪除）；預約、紀錄等歷史資料仍可透過導覽屬性顯示已刪除個案的姓名</summary>
+    private IQueryable<ClientProfile> ExistingClients => _db.ClientProfiles.Where(c => !c.IsDeleted);
+
     public async Task<List<ClientProfileResponseDto>> GetAllAsync()
     {
-        var clients = await _db.ClientProfiles
+        var clients = await ExistingClients
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .ToListAsync();
@@ -33,7 +36,7 @@ public class ClientService
 
     public async Task<ClientProfileResponseDto> GetByIdAsync(int id)
     {
-        var client = await _db.ClientProfiles
+        var client = await ExistingClients
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .FirstOrDefaultAsync(c => c.Id == id)
@@ -55,7 +58,7 @@ public class ClientService
     // 由登入帳號 userId 取得其對應的個案檔 id（供 client 角色自我存取範圍控制；無則 null）
     public async Task<int?> GetClientProfileIdByUserAsync(int userId)
     {
-        return await _db.ClientProfiles
+        return await ExistingClients
             .Where(c => c.UserId == userId)
             .Select(c => (int?)c.Id)
             .FirstOrDefaultAsync();
@@ -184,7 +187,7 @@ public class ClientService
     public async Task<ClientProfileResponseDto> UpdateAsync(
         int id, UpdateClientProfileDto dto, int actorUserId, bool hasFullScope)
     {
-        var client = await _db.ClientProfiles.FindAsync(id)
+        var client = await ExistingClients.FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException("個案不存在");
 
         // BR-20 的跨心理師存取只放寬「唯讀」；修改限指派中的心理師
@@ -215,13 +218,27 @@ public class ClientService
 
     public async Task DeleteAsync(int id)
     {
-        var client = await _db.ClientProfiles
+        var client = await ExistingClients
             .Include(c => c.TherapistClients)
             .FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException("個案不存在");
 
-        _db.TherapistClients.RemoveRange(client.TherapistClients);
-        _db.ClientProfiles.Remove(client);
+        // 軟刪除（D6 / BR-15）：硬刪除會經由外鍵串聯刪掉預約、晤談紀錄、收費與同意書
+        var now = DateTime.UtcNow;
+        client.IsDeleted = true;
+        client.DeletedAt = now;
+        client.UpdatedAt = now;
+        foreach (var relation in client.TherapistClients.Where(tc => tc.Status == TherapistClientStatus.Active))
+            relation.Status = TherapistClientStatus.Closed;
+
+        // 附帳號的個案：帳號一併停用並軟刪除，否則個案仍可登入
+        if (client.UserId is { } accountId)
+        {
+            var account = await _db.Users.FirstAsync(u => u.Id == accountId);
+            account.IsDeleted = true;
+            account.DeletedAt = now;
+            account.IsActive = false;
+        }
         await _db.SaveChangesAsync();
 
         await _audit.LogAsync("delete", "client_profile", id, $"刪除個案 (id={id})");
@@ -229,7 +246,7 @@ public class ClientService
 
     public async Task<ClientProfileResponseDto> AssignTherapistAsync(int clientId, AssignTherapistDto dto, int orgId)
     {
-        var client = await _db.ClientProfiles.FindAsync(clientId)
+        var client = await ExistingClients.FirstOrDefaultAsync(c => c.Id == clientId)
             ?? throw new KeyNotFoundException("個案不存在");
         await EnsureTherapistOfOrganizationAsync(dto.TherapistUserId);
 
@@ -293,7 +310,7 @@ public class ClientService
         if (!validStatuses.Contains(dto.Status))
             throw new BusinessRuleException($"無效的狀態：{dto.Status}");
 
-        var client = await _db.ClientProfiles.FindAsync(id)
+        var client = await ExistingClients.FirstOrDefaultAsync(c => c.Id == id)
             ?? throw new KeyNotFoundException("個案不存在");
 
         var oldStatus = client.Status;
@@ -337,7 +354,7 @@ public class ClientService
         string? keyword, string? idNumberLast4, int? scopeTherapistUserId = null)
     {
         // 加密欄位無法在 DB 層搜尋，需在應用層比對
-        var query = _db.ClientProfiles
+        var query = ExistingClients
             .Include(c => c.TherapistClients)
                 .ThenInclude(tc => tc.TherapistUser)
             .AsQueryable();
